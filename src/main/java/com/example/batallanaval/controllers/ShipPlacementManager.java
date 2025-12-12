@@ -30,7 +30,11 @@ public class ShipPlacementManager {
         setupBoardDragHandlers();
     }
 
+    // =====================================================================
+    // MANEJO DEL TABLERO (SOLTAR BARCOS)
+    // =====================================================================
     private void setupBoardDragHandlers() {
+        // ARRASTRAR SOBRE EL TABLERO (MOSTRAR CUADRO VERDE/ROJO)
         shipsPane.setOnDragOver(e -> {
             if (e.getDragboard().hasString()) {
                 e.acceptTransferModes(TransferMode.MOVE);
@@ -38,15 +42,12 @@ public class ShipPlacementManager {
                 int col = (int) (e.getX() / cellSize);
                 int row = (int) (e.getY() / cellSize);
 
-                // Esto asegura que el barco nunca empiece en una celda que lo haga salirse
+                // CORRECCIÓN DE LÍMITES
                 if (isHorizontal) {
-                    // Si es horizontal, la columna máxima es (10 - tamaño)
                     col = Math.min(col, 10 - size);
                 } else {
-                    // Si es vertical, la fila máxima es (10 - tamaño)
                     row = Math.min(row, 10 - size);
                 }
-                // Aseguramos que nunca sea negativo (por si acaso)
                 col = Math.max(0, col);
                 row = Math.max(0, row);
 
@@ -55,6 +56,7 @@ public class ShipPlacementManager {
             e.consume();
         });
 
+        // SOLTAR EN EL TABLERO (COLOCAR BARCO)
         shipsPane.setOnDragDropped(e -> {
             boolean success = false;
             Dragboard db = e.getDragboard();
@@ -63,6 +65,7 @@ public class ShipPlacementManager {
                 int col = (int) (e.getX() / cellSize);
                 int row = (int) (e.getY() / cellSize);
 
+                // CORRECCIÓN DE LÍMITES (Igual que arriba)
                 if (isHorizontal) {
                     col = Math.min(col, 10 - size);
                 } else {
@@ -71,28 +74,36 @@ public class ShipPlacementManager {
                 col = Math.max(0, col);
                 row = Math.max(0, row);
 
-                // Lógica de Board
                 Board board = controller.getPlayerLogical();
-                Ship tempShip = new Ship(size); // Barco temporal para validar
+                Ship tempShip = new Ship(size);
 
                 if (board.canPlaceShip(tempShip, row, col, isHorizontal)) {
                     board.placeShip(tempShip, row, col, isHorizontal);
-                    placeVisualShip(col, row, size);
+                    // Colocamos visualmente y pasamos la referencia del barco
+                    placeVisualShip(col, row, size, tempShip);
                     controller.checkFleetComplete();
                     success = true;
                 }
             }
+            // Ocultar highlight al soltar exitosamente
             visualizer.getSelectionHighlight().setVisible(false);
             e.setDropCompleted(success);
             e.consume();
         });
 
-        // Rotar con click derecho
+        // CLICK DERECHO PARA ROTAR (Atajo)
         shipsPane.setOnMouseClicked(e -> {
-            if (e.getButton() == MouseButton.SECONDARY) isHorizontal = !isHorizontal;
+            if (e.getButton() == MouseButton.SECONDARY) toggleOrientation();
+        });
+
+        shipsPane.setOnDragExited(e -> {
+            visualizer.getSelectionHighlight().setVisible(false);
         });
     }
 
+    // =====================================================================
+    // 1. ARRASTRAR DESDE EL MENÚ (CREATE)
+    // =====================================================================
     public void createDraggableShip(Canvas canvas, int size) {
         renderer.render(canvas, size);
 
@@ -102,22 +113,108 @@ public class ShipPlacementManager {
             content.putString(String.valueOf(size));
             db.setContent(content);
 
+            // Magia de Rotación al arrastrar desde menú
             WritableImage snapshot = canvas.snapshot(null, null);
+            if (!isHorizontal) {
+                snapshot = rotateImage(snapshot);
+            }
+
             db.setDragView(snapshot);
             e.consume();
         });
 
         canvas.setOnDragDone(e -> {
+            // SEGURIDAD: Apagar cuadro verde por si acaso
+            visualizer.getSelectionHighlight().setVisible(false);
+
             if (e.getTransferMode() == TransferMode.MOVE) {
-                // TRUCO DEL FANTASMA:
-                // En lugar de borrarlo (remove), lo hacemos totalmente transparente.
-                // Así sigue ocupando espacio y los Labels NO se mueven.
+                // Truco del fantasma en el menú
                 canvas.setOpacity(0);
-                canvas.setMouseTransparent(true); // Para que no puedas agarrar el fantasma
+                canvas.setMouseTransparent(true);
             }
         });
     }
 
+    // =====================================================================
+    // 2. ARRASTRAR DESDE EL TABLERO (MOVE / REARRANGE)
+    // =====================================================================
+    private void placeVisualShip(int col, int row, int size, Ship placedShip) {
+        Canvas canvas = new Canvas(size * cellSize, cellSize);
+        renderer.render(canvas, size);
+
+        if (!isHorizontal) {
+            canvas.setRotate(90);
+            double offset = cellSize * (1 - size) / 2.0;
+            canvas.setLayoutX((col * cellSize) + offset);
+            canvas.setLayoutY((row * cellSize) - offset);
+        } else {
+            canvas.setLayoutX(col * cellSize);
+            canvas.setLayoutY(row * cellSize);
+        }
+
+        // Configurar para que se pueda volver a arrastrar
+        setupDragForPlacedShip(canvas, placedShip, size);
+
+        shipsPane.getChildren().add(canvas);
+    }
+
+    public void setupDragForPlacedShip(Canvas canvas, Ship shipRef, int size) {
+        canvas.setOnDragDetected(e -> {
+            // 1. Iniciar el arrastre
+            Dragboard db = canvas.startDragAndDrop(TransferMode.MOVE);
+            ClipboardContent content = new ClipboardContent();
+            content.putString(String.valueOf(size));
+            db.setContent(content);
+
+            // 2. Preparar la imagen (snapshot)
+            WritableImage snapshot = canvas.snapshot(null, null);
+
+            // Lógica de rotación visual:
+            // Si el canvas está rotado pero queremos horizontal -> corregimos la foto
+            // Si el canvas está normal pero queremos vertical -> corregimos la foto
+            boolean isShipVerticalVisual = (canvas.getRotate() != 0);
+            boolean wantVertical = !isHorizontal;
+
+            if (!isShipVerticalVisual && wantVertical) {
+                snapshot = rotateImage(snapshot);
+            } else if (isShipVerticalVisual && !wantVertical) {
+                snapshot = rotateImage(snapshot);
+            }
+
+            db.setDragView(snapshot);
+
+            // 3. Quitar el barco de la lógica del tablero (para liberar las celdas)
+            controller.getPlayerLogical().removeShip(shipRef);
+
+            // 4. SOLUCIÓN MAESTRA: Usar Platform.runLater
+            // Esto espera un "pulso" a que el arrastre inicie bien antes de hacer el barco intangible.
+            // Así el tablero de abajo podrá detectar el mouse y mostrar el cuadro verde.
+            javafx.application.Platform.runLater(() -> {
+                canvas.setOpacity(0.0);           // Invisible
+                canvas.setMouseTransparent(true); // Intangible (para que el mouse vea el tablero)
+            });
+
+            e.consume();
+        });
+
+        canvas.setOnDragDone(e -> {
+            // 5. Borrar el canvas viejo del Pane (ya no sirve, pondremos uno nuevo o volverá al menú)
+            shipsPane.getChildren().remove(canvas);
+
+            // 6. IMPORTANTE: Forzar el apagado del cuadro verde/rojo
+            visualizer.getSelectionHighlight().setVisible(false);
+
+            // 7. Si el drop falló (lo soltó en el agua o fuera de la ventana)
+            if (e.getTransferMode() == null) {
+                controller.returnShipToPanel(size); // Devuélvelo a su casa
+            }
+            e.consume();
+        });
+    }
+
+    // =====================================================================
+    // UTILIDADES
+    // =====================================================================
     private void updateHighlight(int col, int row, int size) {
         Rectangle rect = visualizer.getSelectionHighlight();
         if (col < 0 || row < 0 || col >= 10 || row >= 10) { rect.setVisible(false); return; }
@@ -127,27 +224,26 @@ public class ShipPlacementManager {
         rect.setLayoutX(col * cellSize);
         rect.setLayoutY(row * cellSize);
 
-        // Validación visual simple
         boolean fit = isHorizontal ? (col + size <= 10) : (row + size <= 10);
         rect.setFill(fit ? Color.rgb(0, 255, 0, 0.4) : Color.rgb(255, 0, 0, 0.4));
         rect.setVisible(true);
     }
 
-    private void placeVisualShip(int col, int row, int size) {
-        Canvas canvas = new Canvas(size * cellSize, cellSize); // Horizontal base
-        renderer.render(canvas, size);
+    private WritableImage rotateImage(WritableImage img) {
+        Canvas rotCanvas = new Canvas(img.getHeight(), img.getWidth());
+        javafx.scene.canvas.GraphicsContext gc = rotCanvas.getGraphicsContext2D();
+        gc.translate(rotCanvas.getWidth(), 0);
+        gc.rotate(90);
+        gc.drawImage(img, 0, 0);
+        return rotCanvas.snapshot(null, null);
+    }
 
-        if (!isHorizontal) {
-            canvas.setRotate(90);
-            // Corregir pivote de rotación
-            double offset = cellSize * (1 - size) / 2.0;
-            canvas.setLayoutX((col * cellSize) + offset);
-            canvas.setLayoutY((row * cellSize) - offset);
-        } else {
-            canvas.setLayoutX(col * cellSize);
-            canvas.setLayoutY(row * cellSize);
-        }
-        canvas.setMouseTransparent(true); // ¡Importante!
-        shipsPane.getChildren().add(canvas);
+    public boolean toggleOrientation() {
+        isHorizontal = !isHorizontal;
+        return isHorizontal;
+    }
+
+    public boolean isHorizontal() {
+        return isHorizontal;
     }
 }

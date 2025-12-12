@@ -73,6 +73,18 @@ public class Board {
         fleet.add(ship);
     }
 
+    // Elimina un barco específico del tablero (Lógico)
+    public void removeShip(Ship ship) {
+        for (int r = 0; r < SIZE; r++) {
+            for (int c = 0; c < SIZE; c++) {
+                if (grid[r][c].getShip() == ship) {
+                    grid[r][c] = new Cell(); // Dejamos la celda vacía
+                }
+            }
+        }
+        fleet.remove(ship); // Lo sacamos de la lista de flota
+    }
+
     // ==========================================================
     // SHOOTING LOGIC
     // ==========================================================

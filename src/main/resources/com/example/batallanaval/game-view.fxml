@@ -13,7 +13,7 @@
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
 
-<BorderPane fx:id="root" prefHeight="800" prefWidth="1400" stylesheets="@theme.css" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.batallanaval.controllers.GameController">
+<BorderPane fx:id="root" prefHeight="800" prefWidth="1400" stylesheets="@theme.css" xmlns="http://javafx.com/javafx/17.0.14" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.batallanaval.controllers.GameController">
 
     <top>
         <Label styleClass="title-label" text="🌊 Batalla Naval" BorderPane.alignment="CENTER" />
@@ -57,7 +57,7 @@
                     <Region prefHeight="20" />
 
                     <VBox alignment="CENTER" spacing="10">
-                        <Button fx:id="btnRotate" prefWidth="220" styleClass="button" text="🔄 Rotar Barco" />
+                        <Button fx:id="btnRotate" onAction="#onRotateClick" prefWidth="220" styleClass="button" text="🔄 Rotar Barco" />
                         <Button onAction="#onRandomBoard" prefWidth="220" styleClass="button" text="🎲 Organizar" />
                         <Button fx:id="btnReveal" prefWidth="220" styleClass="reveal-button" text="👁 Revelar Máquina" />
                     </VBox>
@@ -84,17 +84,31 @@
                 <VBox alignment="TOP_CENTER" spacing="20">
                     <Label styleClass="section-label" text="Tablero de la Máquina" />
                     <StackPane fx:id="machineArea" minWidth="502" prefWidth="502" maxWidth="502" minHeight="502" prefHeight="502" maxHeight="502">
-                        <GridPane fx:id="machineBoard" gridLinesVisible="false" minWidth="500" prefWidth="500" maxWidth="500" minHeight="500" prefHeight="500" maxHeight="500" styleClass="board">
+
+                        <GridPane fx:id="machineBoard" gridLinesVisible="false"
+                                  minWidth="500" prefWidth="500" maxWidth="500"
+                                  minHeight="500" prefHeight="500" maxHeight="500"
+                                  styleClass="board">
                             <columnConstraints>
-                                <ColumnConstraints percentWidth="10" /><ColumnConstraints percentWidth="10" /><ColumnConstraints percentWidth="10" /><ColumnConstraints percentWidth="10" /><ColumnConstraints percentWidth="10" />
-                                <ColumnConstraints percentWidth="10" /><ColumnConstraints percentWidth="10" /><ColumnConstraints percentWidth="10" /><ColumnConstraints percentWidth="10" /><ColumnConstraints percentWidth="10" />
+                                <ColumnConstraints percentWidth="10" /><ColumnConstraints percentWidth="10" />
+                                <ColumnConstraints percentWidth="10" /><ColumnConstraints percentWidth="10" />
+                                <ColumnConstraints percentWidth="10" /><ColumnConstraints percentWidth="10" />
+                                <ColumnConstraints percentWidth="10" /><ColumnConstraints percentWidth="10" />
+                                <ColumnConstraints percentWidth="10" /><ColumnConstraints percentWidth="10" />
                             </columnConstraints>
                             <rowConstraints>
-                                <RowConstraints percentHeight="10" /><RowConstraints percentHeight="10" /><RowConstraints percentHeight="10" /><RowConstraints percentHeight="10" /><RowConstraints percentHeight="10" />
-                                <RowConstraints percentHeight="10" /><RowConstraints percentHeight="10" /><RowConstraints percentHeight="10" /><RowConstraints percentHeight="10" /><RowConstraints percentHeight="10" />
+                                <RowConstraints percentHeight="10" /><RowConstraints percentHeight="10" />
+                                <RowConstraints percentHeight="10" /><RowConstraints percentHeight="10" />
+                                <RowConstraints percentHeight="10" /><RowConstraints percentHeight="10" />
+                                <RowConstraints percentHeight="10" /><RowConstraints percentHeight="10" />
+                                <RowConstraints percentHeight="10" /><RowConstraints percentHeight="10" />
                             </rowConstraints>
                         </GridPane>
+
+                        <Pane fx:id="revealLayer" pickOnBounds="false" mouseTransparent="true" />
+
                         <Pane fx:id="enemyLayer" pickOnBounds="false" mouseTransparent="true" />
+
                     </StackPane>
                 </VBox>
 

@@ -13,15 +13,23 @@ public class Ship {
         return length;
     }
 
-    public int getSize() {   // ← NECESARIO para Ship2D
+    public int getSize() {
         return length;
     }
 
-    public void registerHit() { hits++; }
+    public void registerHit() {
+        hits++;
+    }
 
-    public boolean isSunk() { return hits >= length; }
+    public boolean isSunk() {
+        return hits >= length;
+    }
 
-    public boolean isPlaced() { return placed; }
+    public boolean isPlaced() {
+        return placed;
+    }
 
-    public void setPlaced(boolean p) { placed = p; }
+    public void setPlaced(boolean p) {
+        placed = p;
+    }
 }
