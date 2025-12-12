@@ -151,7 +151,9 @@ public class GameController implements Observer {
         shipLayer.setMouseTransparent(true);
 
         machineBoardView.setOnMouseClicked(this::handlePlayerShot);
+        hideEnemyFleet();
         btnReveal.setDisable(true);
+
         log("⚔ ¡Comienza la batalla!");
     }
 
@@ -230,16 +232,23 @@ public class GameController implements Observer {
             }
         }
     }
+    private void hideEnemyFleet() {
+        machineBoardView.getChildren()
+                .removeIf(n -> "reveal".equals(n.getUserData()));
+
+        log("👻 Flota enemiga oculta");
+    }
     private void revealEnemyFleet() {
 
-        // Evitar revelar durante la batalla real
+        // Solo permitir antes de iniciar batalla
         if (!placementPhase) {
             log("⚠ No puedes revelar la flota durante la batalla.");
             return;
         }
 
-        // Limpiar marcas previas (si se presiona varias veces)
-        machineBoardView.getChildren().removeIf(n -> n.getUserData() != null);
+        // Limpiar revelados previos
+        machineBoardView.getChildren()
+                .removeIf(n -> "reveal".equals(n.getUserData()));
 
         for (int row = 0; row < 10; row++) {
             for (int col = 0; col < 10; col++) {
@@ -248,16 +257,16 @@ public class GameController implements Observer {
 
                 if (cell.hasShip()) {
                     Rectangle r = new Rectangle(CELL, CELL);
-                    r.setFill(Color.rgb(0, 0, 0, 0.25)); // sombra oscura
+                    r.setFill(Color.rgb(0, 0, 0, 0.25));
                     r.setStroke(Color.DARKRED);
-                    r.setUserData("reveal"); // marca para poder borrar luego
+                    r.setUserData("reveal");
 
                     machineBoardView.add(r, col, row);
                 }
             }
         }
 
-        log("👁 Flota enemiga revelada (modo observación)");
+        log("👁 Flota enemiga revelada");
     }
 
 }

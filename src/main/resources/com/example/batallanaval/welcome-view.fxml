@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<StackPane xmlns="http://javafx.com/javafx/17"
+           xmlns:fx="http://javafx.com/fxml"
+           fx:controller="com.example.batallanaval.controllers.StartController"
+           style="-fx-background-color: radial-gradient(radius 100%, #1e3a8a, #020617);">
+
+    <VBox alignment="CENTER" spacing="20">
+
+        <Label text="BATALLA NAVAL"
+               style="-fx-font-family: 'Courier New';
+                      -fx-font-size: 36px;
+                      -fx-text-fill: #e0f2fe;
+                      -fx-font-weight: bold;
+                      -fx-effect: dropshadow(gaussian, #38bdf8, 10, 0.4, 0, 0);" />
+
+        <Button text="▶ CONTINUAR JUEGO"
+                fx:id="btnContinue"
+                prefWidth="260"
+                style="-fx-font-family: 'Courier New';
+                       -fx-font-size: 16px;
+                       -fx-background-color: #020617;
+                       -fx-text-fill: #38bdf8;
+                       -fx-border-color: #38bdf8;" />
+
+        <Button text="🆕 NUEVO JUEGO"
+                fx:id="btnNew"
+                prefWidth="260"
+                style="-fx-font-family: 'Courier New';
+                       -fx-font-size: 16px;
+                       -fx-background-color: #020617;
+                       -fx-text-fill: #a7f3d0;
+                       -fx-border-color: #a7f3d0;" />
+
+        <Button text="⏹ SALIR"
+                fx:id="btnExit"
+                prefWidth="260"
+                style="-fx-font-family: 'Courier New';
+                       -fx-font-size: 16px;
+                       -fx-background-color: #020617;
+                       -fx-text-fill: #fecaca;
+                       -fx-border-color: #fecaca;" />
+
+    </VBox>
+</StackPane>
