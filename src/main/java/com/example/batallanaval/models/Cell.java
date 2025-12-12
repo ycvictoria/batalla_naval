@@ -12,9 +12,17 @@ public class Cell implements Serializable {
     private Ship ship;
     private boolean shot;
 
-    public boolean hasShip() { return hasShip; }
-    public Ship getShip() { return ship; }
-    public boolean isShot() { return shot; }
+    public boolean hasShip() {
+        return hasShip;
+    }
+
+    public Ship getShip() {
+        return ship;
+    }
+
+    public boolean isShot() {
+        return shot;
+    }
 
     public void placeShip(Ship ship) {
         this.hasShip = true;

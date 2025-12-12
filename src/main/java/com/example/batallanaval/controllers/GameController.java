@@ -1,13 +1,12 @@
 package com.example.batallanaval.controllers;
 
 import com.example.batallanaval.models.*;
-import com.example.batallanaval.views.Ship2D;
-import com.example.batallanaval.views.ShipAdapter;
-
+import com.example.batallanaval.views.BoardVisualizer;
+import com.example.batallanaval.views.CanvasMarkerRenderer;
+import com.example.batallanaval.views.CanvasShipRenderer;
 import javafx.fxml.FXML;
+import javafx.scene.canvas.Canvas;
 import javafx.scene.control.Button;
-import javafx.scene.input.MouseButton;
-import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.StackPane;
@@ -15,34 +14,42 @@ import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 
-import java.util.List;
-
 public class GameController {
 
     // ========= FXML ELEMENTS =========
     @FXML private VBox fleetPanel;
+    @FXML private VBox carrierContainer;
+    @FXML private VBox submarineContainer;
+    @FXML private VBox destroyerContainer;
+    @FXML private VBox frigateContainer;
+
     @FXML private StackPane playerArea;
     @FXML private Pane shipLayer;
     @FXML private GridPane playerBoard;
     @FXML private GridPane machineBoard;
+    @FXML private Pane enemyLayer;
 
     @FXML private Button btnRotate;
     @FXML private Button btnReveal;
     @FXML private Button btnStart;
 
     // ========= GAME LOGIC =========
-    private final int CELL = 40;
+    private final int CELL = 50;
     private boolean placementPhase = true;
 
     private Board playerLogical = new Board();
     private Board machineLogical = new Board();
     private MachineAI ai = new MachineAI();
 
-    // ========= DRAGGING VARIABLES =========
-    private Ship2D selectedShip = null;
-    private Ship2D dragging = null;
-    private double offsetX, offsetY;
+    // ========= NUEVOS GESTORES VISUALES =========
+    private ShipPlacementManager placementManager;
+    private BoardVisualizer boardVisualizer;
 
+    // Renderer para pintar los barcos en el menú lateral antes de arrastrarlos
+    private final CanvasShipRenderer renderer = new CanvasShipRenderer();
+
+    private CanvasMarkerRenderer markerRenderer;
+    private Rectangle targetHighlight;
 
     // =====================================================================
     // INITIALIZATION
@@ -50,273 +57,386 @@ public class GameController {
     @FXML
     public void initialize() {
 
-        // Generate enemy fleet
+        // 1. Inicializar tableros lógicos
         machineLogical.randomizeShips();
 
-        // Generate player fleet and initialize dragging behavior
-        initPlayerFleet();
+        // 2. Inicializar el Visualizador (Dibuja la grilla y el cuadrado de selección)
+        // Le pasamos el 'shipLayer' que es el Pane transparente encima del Grid
+        boardVisualizer = new BoardVisualizer(shipLayer, CELL);
 
-        // Rotate ship button
-        btnRotate.setOnAction(e -> rotateSelectedShip());
+        if (enemyLayer != null) {
+            boardVisualizer.drawGrid(enemyLayer); // Dibuja líneas en el enemigo
+            boardVisualizer.prepareEnemyBoard(enemyLayer); // Prepara la mira naranja
+        }
+        boardVisualizer.drawGrid();
 
-        // Reveal machine board (debug)
+        markerRenderer = new CanvasMarkerRenderer(CELL);
+
+        // 3. Inicializar el Gestor de Arrastre
+        // Este se encargará de toda la magia de Drag & Drop
+        placementManager = new ShipPlacementManager(this, boardVisualizer, shipLayer, CELL);
+
+        // 4. Crear la flota en el panel lateral (Canvas bonitos)
+        initDraggableFleet();
+
+        // --- AGREGA ESTO PARA LA MIRA ---
+        // 1. Crear el cuadrado
+        targetHighlight = new Rectangle(CELL, CELL); // Tamaño 50x50
+        targetHighlight.setFill(Color.rgb(255, 165, 0, 0.3)); // Naranja transparente
+        targetHighlight.setStroke(Color.ORANGE);
+        targetHighlight.setStrokeWidth(2);
+        targetHighlight.setVisible(false); // Oculto al principio
+        targetHighlight.setMouseTransparent(true); // ¡Vital! Para que no bloquee tus clics
+
+        // 2. Agregarlo al tablero de la máquina
+        machineBoard.getChildren().add(targetHighlight);
+
+        // 5. Configurar botones
+        btnStart.setDisable(true);
+        btnStart.setOnAction(e -> startBattlePhase());
         btnReveal.setOnAction(e -> revealEnemyFleet());
 
-        // Start battle button
-        btnStart.setDisable(true); // initially disabled
-        btnStart.setOnAction(e -> startBattlePhase());
-
-        // Disable shooting until battle start
+        // Deshabilitar disparos hasta que empiece el juego
         enableMachineShotEvents(false);
     }
 
+    // =====================================================================
+    // CREACIÓN DE FLOTA ARRASTRABLE (NUEVO MÉTODO)
+    // =====================================================================
+    private void initDraggableFleet() {
+        //fleetPanel.getChildren().clear(); // Limpiar por si acaso
+        if (carrierContainer != null) carrierContainer.getChildren().clear();
+        if (submarineContainer != null) submarineContainer.getChildren().clear();
+        if (destroyerContainer != null) destroyerContainer.getChildren().clear();
+        if (frigateContainer != null) frigateContainer.getChildren().clear();
+
+        // 1 Portaaviones -> al carrierContainer
+        createShipInPanel(4, carrierContainer);
+
+        // 2 Submarinos -> al submarineContainer
+        createShipInPanel(3, submarineContainer);
+        createShipInPanel(3, submarineContainer);
+
+        // 3 Destructores -> al destroyerContainer
+        createShipInPanel(2, destroyerContainer);
+        createShipInPanel(2, destroyerContainer);
+        createShipInPanel(2, destroyerContainer);
+
+        // 4 Fragatas -> al frigateContainer
+        createShipInPanel(1, frigateContainer);
+        createShipInPanel(1, frigateContainer);
+        createShipInPanel(1, frigateContainer);
+        createShipInPanel(1, frigateContainer);
+    }
+
+    private void createShipInPanel(int size, Pane targetPane) {
+        if (targetPane == null) return;
+
+        // 1. Definimos un tamaño de celda
+        int MENU_CELL = 35;
+
+        // 2. Creamos el Canvas con el tamaño real final (Sin setScale)
+        Canvas canvas = new Canvas(size * MENU_CELL, MENU_CELL);
+
+        // 3. El Renderer es inteligente y se adapta al tamaño del Canvas automáticamente
+        // (Tu CanvasShipRenderer usa canvas.getWidth() así que dibujará bien)
+        renderer.render(canvas, size);
+
+        // 4. Configurar el arrastre
+        // NOTA: Al arrastrar, el manager usará el tamaño lógico (size),
+        // así que al soltarlo en el tablero se verá grande (50px) otra vez.
+        placementManager.createDraggableShip(canvas, size);
+
+        // 5. Agregar al panel
+        targetPane.getChildren().add(canvas);
+    }
 
     // =====================================================================
-    // PLAYER FLEET INITIALIZATION
+    // ALEATORIZAR TABLERO JUGADOR
     // =====================================================================
-    private void initPlayerFleet() {
+    @FXML
+    private void onRandomBoard() {
+        // 1. Limpiar Lógica
+        playerLogical.clear();
+        playerLogical.randomizeShips(); // Usamos la misma lógica que la IA
 
-        // Create ships through factories
-        /*List<Ship> fleet = List.of(
-                new CarrierFactory().createShip(),     // size 4
-                new SubmarineFactory().createShip(),   // size 3
-                new DestroyerFactory().createShip(),   // size 2
-                new DestroyerFactory().createShip(),   // size 2
-                new FrigateFactory().createShip()      // size 1
-        );*/
+        // 2. Limpiar Visuales del Tablero
+        shipLayer.getChildren().clear();
+        boardVisualizer.drawGrid(); // Redibujamos la cuadrícula porque el clear la borró
 
-        // Create 10 ships.
-        List<Ship> fleet = List.of(
-                new CarrierFactory().createShip(),     // size 4 (1)
+        // 3. Limpiar el Panel de la Izquierda (Ya no hay barcos para arrastrar)
+        if (carrierContainer != null) carrierContainer.getChildren().clear();
+        if (submarineContainer != null) submarineContainer.getChildren().clear();
+        if (destroyerContainer != null) destroyerContainer.getChildren().clear();
+        if (frigateContainer != null) frigateContainer.getChildren().clear();
 
-                new SubmarineFactory().createShip(),   // size 3 (1)
-                new SubmarineFactory().createShip(),   // size 3 (2)
+        // 4. Dibujar los barcos en el tablero basándonos en la nueva lógica
+        drawPlayerBoardFromModel();
 
-                new DestroyerFactory().createShip(),   // size 2 (1)
-                new DestroyerFactory().createShip(),   // size 2 (2)
-                new DestroyerFactory().createShip(),   // size 2 (3)
+        // 5. Activar botón de inicio (porque la flota ya está completa)
+        checkFleetComplete();
+    }
 
-                new FrigateFactory().createShip(),      // size 1 (1)
-                new FrigateFactory().createShip(),      // size 1 (2)
-                new FrigateFactory().createShip(),      // size 1 (3)
-                new FrigateFactory().createShip()       // size 1 (4)
-        );
+    // Método auxiliar para "escanear" el tablero lógico y pintar los barcos
+    private void drawPlayerBoardFromModel() {
+        java.util.Set<Ship> drawnShips = new java.util.HashSet<>();
 
-        // Create graphics & add them to shipLayer
-        int startY = 20;
-        for (Ship ship : fleet) {
+        for (int r = 0; r < 10; r++) {
+            for (int c = 0; c < 10; c++) {
+                Ship ship = playerLogical.peek(r, c).getShip();
 
-            Ship2D s2d = ShipAdapter.toGraphic(ship, true);
-            registerShip(s2d, ship);
-            fleetPanel.getChildren().add(s2d);
+                // Si encontramos un barco que no hemos dibujado aún...
+                if (ship != null && !drawnShips.contains(ship)) {
+                    // ...significa que esta es la esquina superior izquierda del barco
+                    boolean isHorizontal = false;
 
-            // Starting position (stacked visually)
-            // s2d.setLayoutX(20);
-            //s2d.setLayoutY(startY);
-            //startY += 70;
-            //shipLayer.getChildren().add(s2d);
+                    // Verificamos orientación mirando la celda de la derecha
+                    if (c + 1 < 10 && playerLogical.peek(r, c + 1).getShip() == ship) {
+                        isHorizontal = true;
+                    }
+                    // Caso especial: Fragata (Tamaño 1) siempre la tratamos como horizontal o vertical da igual
+                    if (ship.getSize() == 1) isHorizontal = true;
+
+                    // Dibujar
+                    Canvas canvas = new Canvas(ship.getSize() * CELL, CELL);
+                    renderer.render(canvas, ship.getSize());
+
+                    if (!isHorizontal) {
+                        canvas.setRotate(90);
+                        // Ajuste de pivote para rotación correcta
+                        double offset = CELL * (1 - ship.getSize()) / 2.0;
+                        canvas.setLayoutX((c * CELL) + offset);
+                        canvas.setLayoutY((r * CELL) - offset);
+                    } else {
+                        canvas.setLayoutX(c * CELL);
+                        canvas.setLayoutY(r * CELL);
+                    }
+
+                    canvas.setMouseTransparent(true); // Para que no bloquee los clics
+                    shipLayer.getChildren().add(canvas);
+
+                    drawnShips.add(ship); // Marcamos como dibujado
+                }
+            }
         }
     }
 
+    // =====================================================================
+    // GETTER PARA EL MANAGER (IMPORTANTE)
+    // =====================================================================
+    public Board getPlayerLogical() {
+        return playerLogical;
+    }
+
+    // Método llamado por el Manager para saber si ya están todos los barcos
+    public void checkFleetComplete() {
+        if (playerLogical.isFleetComplete()) {
+            btnStart.setDisable(false);
+        }
+    }
+
+    // =====================================================================
+    // FASE DE BATALLA (DISPAROS)
+    // =====================================================================
+    private void startBattlePhase() {
+        placementPhase = false;
+        shipLayer.setMouseTransparent(true); // Ya no se pueden mover barcos
+        fleetPanel.setDisable(true);
+
+        // Feedback visual para que sepas que funcionó
+        btnStart.setText("¡EN COMBATE!");
+        btnStart.setStyle("-fx-background-color: #FF4444; -fx-text-fill: white;");
+
+        enableMachineShotEvents(true);
+        System.out.println("⚔ ¡Comienza la batalla!");
+    }
+
+    private void enableMachineShotEvents(boolean enable) {
+        if (!enable) {
+            machineBoard.setOnMouseClicked(null);
+            machineBoard.setOnMouseMoved(null);
+            machineBoard.setOnMouseExited(null);
+            return;
+        }
+
+        // 1. EVENTO DE MOVIMIENTO (El efecto que quieres)
+        machineBoard.setOnMouseMoved(e -> {
+            int col = (int)(e.getX() / CELL);
+            int row = (int)(e.getY() / CELL);
+            boardVisualizer.updateTargetHighlight(col,row);
+
+            // Validar que esté dentro del tablero (0-9)
+            if (col >= 0 && col < 10 && row >= 0 && row < 10) {
+                targetHighlight.setVisible(true);
+
+                // Mover el rectángulo a la columna y fila correcta del GridPane
+                GridPane.setColumnIndex(targetHighlight, col);
+                GridPane.setRowIndex(targetHighlight, row);
+            } else {
+                targetHighlight.setVisible(false);
+            }
+        });
+
+        // 2. EVENTO DE SALIDA (Ocultar si sacas el mouse)
+        machineBoard.setOnMouseExited(e -> {
+            targetHighlight.setVisible(false);
+        });
+
+        machineBoard.setOnMouseClicked(e -> {
+            int col = (int)(e.getX() / CELL);
+            int row = (int)(e.getY() / CELL);
+
+            targetHighlight.setVisible(false);
+
+            // Turno del Jugador
+            ShotResult result = machineLogical.shoot(row, col);
+            if (result == null) return; // Ya disparado
+
+            // --- CAMBIO AQUÍ ---
+            if (result == ShotResult.SUNK) {
+                // 1. Obtener el barco que acabamos de hundir
+                Ship sunkShip = machineLogical.peek(row, col).getShip();
+
+                // 2. Llamar al método que pinta fuego en TODO el barco
+                markShipAsSunk(machineBoard, machineLogical, sunkShip);
+                System.out.println("¡HUNDIDO! Barco destruido.");
+            } else {
+                // Si es MISS o HIT, pintamos solo esa celda normal
+                paint(machineBoard, row, col, result);
+            }
+
+            if (machineLogical.isGameOver()) {
+                System.out.println("¡VICTORIA! Has ganado.");
+                machineBoard.setOnMouseClicked(null);
+                return;
+            }
+
+            // Si fallas, turno de la Máquina
+            if (result == ShotResult.MISS) {
+                playMachineTurn();
+            } else {
+                System.out.println("¡Impacto! Sigues disparando.");
+            }
+        });
+    }
+
+    private void playMachineTurn() {
+        // IA Dispara
+        int[] aiShot = ai.shoot(playerLogical);
+        int r = aiShot[0];
+        int c = aiShot[1];
+
+        ShotResult machineResult = playerLogical.shoot(r, c);
+        if (machineResult == ShotResult.SUNK) {
+            Ship sunkShip = playerLogical.peek(r, c).getShip();
+            // Creamos un método especial para quemar el barco en la capa visual
+            markPlayerShipAsSunk(sunkShip);
+        } else {
+            // Pintamos el HIT o MISS sobre la capa de barcos
+            paintOnPane(shipLayer, r, c, machineResult);
+        }
+
+        if (playerLogical.isGameOver()) {
+            System.out.println("DERROTA. La máquina ganó.");
+            machineBoard.setOnMouseClicked(null);
+        } else if (machineResult != ShotResult.MISS) {
+            // Si la IA acierta, vuelve a disparar (Recursivo simple)
+            playMachineTurn();
+        }
+    }
+
+    // Este busca las partes del barco hundido y las pinta de fuego EN LA CAPA DEL JUGADOR
+    private void markPlayerShipAsSunk(Ship sunkShip) {
+        for (int r = 0; r < 10; r++) {
+            for (int c = 0; c < 10; c++) {
+                if (playerLogical.peek(r, c).getShip() == sunkShip) {
+                    // Pintamos FUEGO encima del barco
+                    paintOnPane(shipLayer, r, c, ShotResult.SUNK);
+                }
+            }
+        }
+    }
+
+    // =====================================================================
+// NUEVO: PINTAR SOBRE CAPA VISUAL (Para el Tablero del Jugador)
+// =====================================================================
+    private void paintOnPane(Pane layer, int row, int col, ShotResult result) {
+        Canvas marker = null;
+
+        switch (result) {
+            case MISS -> marker = markerRenderer.drawMiss(); // O markerRenderer si cambiaste el nombre
+            case HIT  -> marker = markerRenderer.drawHit();
+            case SUNK -> marker = markerRenderer.drawSunk();
+        }
+
+        if (marker != null) {
+            marker.setMouseTransparent(true);
+            // En un Pane normal, usamos layout X e Y, no columnas/filas
+            marker.setLayoutX(col * CELL);
+            marker.setLayoutY(row * CELL);
+
+            // ¡TRUCO! Lo agregamos al final para que se dibuje ENCIMA de los barcos
+            layer.getChildren().add(marker);
+            marker.toFront();
+        }
+    }
+
+    // =====================================================================
+// PINTAR DISPAROS (CON ICONOS)
+// =====================================================================
+    private void paint(GridPane pane, int row, int col, ShotResult result) {
+
+        // Usamos Canvas en lugar de Rectangle
+        Canvas marker = null;
+
+        switch (result) {
+            case MISS -> marker = markerRenderer.drawMiss(); // Dibuja la X roja
+            case HIT  -> marker = markerRenderer.drawHit();  // Dibuja la Bomba
+            case SUNK -> marker = markerRenderer.drawSunk(); // Dibuja el Fuego
+        }
+
+        if (marker != null) {
+            // Importante: setMouseTransparent(true) para que el icono no bloquee clics futuros
+            marker.setMouseTransparent(true);
+            pane.add(marker, col, row);
+        }
+    }
+
+    // =====================================================================
+    // DEBUG: REVELAR FLOTA ENEMIGA
+    // =====================================================================
+    private void revealEnemyFleet() {
+        int size = machineLogical.getSize();
+        for (int r = 0; r < size; r++) {
+            for (int c = 0; c < size; c++) {
+                if (machineLogical.peek(r, c).hasShip()) {
+                    Rectangle rect = new Rectangle(CELL, CELL);
+                    rect.setFill(Color.YELLOW);
+                    rect.setOpacity(0.5);
+                    machineBoard.add(rect, c, r);
+                }
+            }
+        }
+        System.out.println("Flota enemiga revelada (Modo Debug)");
+    }
 
     // =====================================================================
     // ROTATE SHIP
     // =====================================================================
     private void rotateSelectedShip() {
-        if (selectedShip != null) {
-            selectedShip.toggleOrientation();
-        }
     }
 
-
     // =====================================================================
-    // REGISTER SHIP FOR DRAGGING + PLACEMENT
-    // =====================================================================
-    public void registerShip(Ship2D ship2D, Ship logicalShip) {
-
-        // Select ship (necessary for rotate)
-        ship2D.setOnMouseClicked(e -> {
-            if (!placementPhase) return;
-
-            selectedShip = ship2D;
-
-            if (e.getButton() == MouseButton.SECONDARY)
-                ship2D.toggleOrientation();
-        });
-
-        // Start dragging
-        ship2D.setOnMousePressed(e -> {
-            if (ship2D.getParent() != shipLayer) {
-                ((Pane) ship2D.getParent()).getChildren().remove(ship2D);
-                shipLayer.getChildren().add(ship2D);
-            }
-
-            if (!placementPhase) return;
-
-            dragging = ship2D;
-            offsetX = e.getSceneX() - ship2D.getLayoutX();
-            offsetY = e.getSceneY() - ship2D.getLayoutY();
-        });
-
-        // Dragging movement
-        ship2D.setOnMouseDragged(e -> {
-            if (!placementPhase) return;
-
-            ship2D.setLayoutX(e.getSceneX() - offsetX);
-            ship2D.setLayoutY(e.getSceneY() - offsetY);
-        });
-
-        // Release → Attempt to place ship into grid
-        ship2D.setOnMouseReleased(e -> {
-            if (!placementPhase) return;
-
-            // 1. Scene coordinates of ship
-            double sceneX = ship2D.localToScene(0, 0).getX();
-            double sceneY = ship2D.localToScene(0, 0).getY();
-
-            // 2. Convert to playerBoard coordinates
-            double gridX = playerBoard.sceneToLocal(sceneX, sceneY).getX();
-            double gridY = playerBoard.sceneToLocal(sceneX, sceneY).getY();
-
-            int col = (int)(gridX / CELL);
-            int row = (int)(gridY / CELL);
-
-            boolean horiz = ship2D.isHorizontal();
-
-            // Validate placement
-            if (playerLogical.canPlaceShip(logicalShip, row, col, horiz)) {
-
-                playerLogical.placeShip(logicalShip, row, col, horiz);
-
-                // Snap ship to grid
-                ship2D.setLayoutX(playerBoard.getLayoutX() + col * CELL);
-                ship2D.setLayoutY(playerBoard.getLayoutY() + row * CELL);
-
-                ship2D.setColor(Color.WHITE);
-
-                // Check if fleet is complete → enable start button
-                if (playerLogical.isFleetComplete()) {
-                    btnStart.setDisable(false);
-                }
-
-            } else {
-                // Invalid → reset
-                ship2D.setLayoutX(20);
-                ship2D.setLayoutY(20);
-                ship2D.setColor(Color.PINK);
-            }
-        });
-    }
-
-
-    // =====================================================================
-    // ENABLE MACHINE BOARD SHOOTING
-    // =====================================================================
-    private void enableMachineShotEvents(boolean enable) {
-
-        if (!enable) {
-            machineBoard.setOnMouseClicked(null);
-            return;
-        }
-
-        machineBoard.setOnMouseClicked(e -> {
-
-            // Row and column calculation
-            int col = (int)(e.getX() / CELL);
-            int row = (int)(e.getY() / CELL);
-
-            ShotResult result = machineLogical.shoot(row, col);
-            if (result == null) return;
-
-            paint(machineBoard, row, col, result);
-
-            // Check player's victory
-
-            if (machineLogical.isGameOver()) {
-                // Manejar Fin de Juego (Jugador gana)
-                System.out.println("¡Victoria! Has hundido toda la flota enemiga.");
-                disableAllShooting(); // Detiene el juego
-                return;
-            }
-
-            // Turn Logic: If it's MISS, the AI shoots
-            if (result == ShotResult.MISS) {
-
-                // AI shoots back
-                int[] aiShot = ai.shoot(playerLogical);
-                int r = aiShot[0];
-                int c = aiShot[1];
-
-                ShotResult machineResult = playerLogical.shoot(r, c);
-                paint(playerBoard, r, c, machineResult);
-
-                //Check machine victory
-                if (playerLogical.isGameOver()) {
-                    // Game Over
-                    System.out.println("Derrota! La Máquina ha hundido tu flota.");
-                    disableAllShooting(); // Game stops.
-                }
-            } else {
-                // Si es HIT o SUNK, el turno se mantiene para el jugador.
-                System.out.println("Has adivinado! Sigue disparando.");
-            }
-        });
-    }
-
-    private void disableAllShooting(){
-        machineBoard.setOnMouseClicked(null);
-        // Agregar lógica para mostrar mensaje de fin de juego.
-    }
-
-
-    // =====================================================================
-    // START BATTLE PHASE
-    // =====================================================================
-    private void startBattlePhase() {
-
-        placementPhase = false;
-
-        shipLayer.setDisable(true);
-        fleetPanel.setDisable(true);
-
-        enableMachineShotEvents(true);
-
-        System.out.println("⚔ ¡Comienza la batalla!");
-    }
-
-
-    // =====================================================================
-    // PAINT SHOT RESULT
-    // =====================================================================
-    private void paint(GridPane pane, int row, int col, ShotResult result) {
-
-        Rectangle rect = new Rectangle(CELL, CELL);
-
-        switch (result) {
-            case MISS -> rect.setFill(Color.LIGHTBLUE);
-            case HIT  -> rect.setFill(Color.ORANGE);
-            case SUNK -> rect.setFill(Color.RED);
-        }
-
-        pane.add(rect, col, row);
-    }
-
-
-    // =====================================================================
-    // DEBUG: REVEAL ENEMY FLEET
-    // =====================================================================
-    private void revealEnemyFleet() {
-
-        int size = machineLogical.getSize();
-
-        for (int r = 0; r < size; r++) {
-            for (int c = 0; c < size; c++) {
-
-                if (machineLogical.peek(r, c).hasShip()) {
-
-                    Rectangle rect = new Rectangle(CELL, CELL);
-                    rect.setFill(Color.YELLOW);
-                    machineBoard.add(rect, c, r);
+// MÉTODO AUXILIAR: PINTAR TODO EL BARCO DE FUEGO
+// =====================================================================
+    private void markShipAsSunk(GridPane pane, Board board, Ship sunkShip) {
+        // Recorremos todo el tablero buscando las partes de ese barco específico
+        for (int r = 0; r < 10; r++) {
+            for (int c = 0; c < 10; c++) {
+                // Si la celda tiene UN barco y es EL MISMO que acabamos de hundir
+                if (board.peek(r, c).getShip() == sunkShip) {
+                    // Forzamos a pintar FUEGO (SUNK) en esa coordenada
+                    paint(pane, r, c, ShotResult.SUNK);
                 }
             }
         }
