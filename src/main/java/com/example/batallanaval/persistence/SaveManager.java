@@ -82,5 +82,22 @@ public class SaveManager {
         }
     }
 
+    // ==========================
+    // BORRAR PARTIDA (GAME OVER)
+    // ==========================
+    public static void deleteSaves() {
+        try {
+            File pBoard = new File(SAVE_DIR + "/player_board.ser");
+            File mBoard = new File(SAVE_DIR + "/machine_board.ser");
+            File pInfo = new File(SAVE_DIR + "/player.txt");
 
+            if (pBoard.exists()) pBoard.delete();
+            if (mBoard.exists()) mBoard.delete();
+            if (pInfo.exists()) pInfo.delete();
+
+            System.out.println("🗑️ Archivos de guardado eliminados tras finalizar la partida.");
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 }

@@ -41,6 +41,7 @@ public class GameController {
     // ========= GAME LOGIC =========
     private final int CELL = 50;
     private boolean placementPhase = true;
+    private boolean isGameFinished = false;
     private String playerNickname;
     private Board playerLogical = new Board();
     private Board machineLogical = new Board();
@@ -64,11 +65,7 @@ public class GameController {
     @FXML
     public void initialize() {
 
-        // 1. Inicializar tableros lógicos
-       // machineLogical.randomizeShips();
-        //playerNickname= "Almirant Player";
-
-        // 2. Inicializar el Visualizador (Dibuja la grilla y el cuadrado de selección)
+        // Inicializar el Visualizador (Dibuja la grilla y el cuadrado de selección)
         // Le pasamos el 'shipLayer' que es el Pane transparente encima del Grid
         boardVisualizer = new BoardVisualizer(shipLayer, CELL);
 
@@ -496,59 +493,13 @@ public class GameController {
     // HUNDIR BARCO DEL JUGADOR (FANTASMA + FUEGO)
     // =====================================================================
     private void markPlayerShipAsSunk(Ship sunkShip) {
-        // ENCONTRAR EL BARCO VISUAL Y VOLVERLO TRANSPARENTE ---
+        // 1. Aplicar efecto visual (Transparencia)
+        applyGhostEffectToPlayerShip(sunkShip);
 
-        // Encontrar la posición lógica inicial (esquina superior izquierda) del barco
-        int startR = -1, startC = -1;
-        boolean found = false;
-        for (int r = 0; r < 10 && !found; r++) {
-            for (int c = 0; c < 10 && !found; c++) {
-                if (playerLogical.peek(r, c).getShip() == sunkShip) {
-                    startR = r;
-                    startC = c;
-                    found = true;
-                }
-            }
-        }
-
-        if (found) {
-            // 1.2. Determinar orientación para calcular la posición visual exacta
-            boolean isHorizontal = false;
-            if (sunkShip.getSize() == 1) isHorizontal = true;
-            else if (startC + 1 < 10 && playerLogical.peek(startR, startC + 1).getShip() == sunkShip) isHorizontal = true;
-
-            // Calcular dónde debería estar el Canvas visualmente (layoutX, layoutY)
-            double expectedX, expectedY;
-            if (isHorizontal) {
-                expectedX = startC * CELL;
-                expectedY = startR * CELL;
-            } else {
-                // Si es vertical, recuerda que usamos un offset al rotarlo
-                double offset = CELL * (1 - sunkShip.getSize()) / 2.0;
-                expectedX = (startC * CELL) + offset;
-                expectedY = (startR * CELL) - offset;
-            }
-
-            // Buscar ese Canvas específico en la capa y cambiar su opacidad
-            for (javafx.scene.Node node : shipLayer.getChildren()) {
-                // Verificamos si es un Canvas y si coincide con la posición calculada
-                if (node instanceof Canvas canvas &&
-                        Math.abs(canvas.getLayoutX() - expectedX) < 1.0 && // Usamos pequeña tolerancia
-                        Math.abs(canvas.getLayoutY() - expectedY) < 1.0) {
-
-                    // ¡ENCONTRADO! Lo convertimos en fantasma
-                    canvas.setOpacity(0.5);
-                    canvas.setMouseTransparent(true); // Aseguramos que no estorbe
-                    break; // Ya lo encontramos, dejamos de buscar
-                }
-            }
-        }
-
-        // PINTAR EL FUEGO ENCIMA
+        // 2. Pintar el fuego encima
         for (int r = 0; r < 10; r++) {
             for (int c = 0; c < 10; c++) {
                 if (playerLogical.peek(r, c).getShip() == sunkShip) {
-                    // El fuego se añade al final, así que quedará ENCIMA del barco transparente
                     paintOnPane(shipLayer, r, c, ShotResult.SUNK);
                 }
             }
@@ -671,6 +622,8 @@ public class GameController {
     // MANEJO DE FIN DEL JUEGO (VICTORIA / DERROTA)
     // =====================================================================
     private void handleGameOver(boolean playerWon) {
+
+        isGameFinished = true;
         // 1. Desactivar interacciones
         machineBoard.setOnMouseClicked(null);
         machineBoard.setOnMouseMoved(null);
@@ -702,6 +655,7 @@ public class GameController {
             alert.setContentText("¡HAN HUNDIDO TU FLOTA!\nMás suerte para la próxima, cadete.");
         }
 
+        SaveManager.deleteSaves();
         alert.show(); // Usamos show() en lugar de showAndWait() para no congelar la UI
     }
 
@@ -710,6 +664,9 @@ public class GameController {
     }
 
     private void autoSave() {
+        // Si el juego terminó, no guardes nada.
+        if (isGameFinished) return;
+
         SaveManager.saveBoard(playerLogical, "player_board.ser");
         SaveManager.saveBoard(machineLogical, "machine_board.ser");
         SaveManager.savePlayerInfo(playerNickname, numSunkShips,placementPhase);
@@ -744,12 +701,132 @@ public class GameController {
     }
 
 
+    // =====================================================================
+    // MÉTODO CORREGIDO: RESTAURAR TODO (INCLUIDO ENEMIGO)
+    // =====================================================================
     private void redrawBoards() {
+        // 1. LIMPIEZA PROFUNDA
         playerBoard.getChildren().clear();
         machineBoard.getChildren().clear();
+        shipLayer.getChildren().clear();
+        enemyLayer.getChildren().clear();
+        revealLayer.getChildren().clear();
+
+        // 2. RESTAURAR TABLERO JUGADOR
         drawPlayerBoardFromModel();
-        drawMachineBoardRealShips();
+        boardVisualizer.drawGrid();
+        boardVisualizer.recreateHighlight();
+
+        // 3. RESTAURAR TABLERO ENEMIGO (¡ESTO FALTABA!)
+        // A) Volver a pintar las líneas en el lado derecho
+        boardVisualizer.drawGrid(enemyLayer); // <--- ESTA LÍNEA ARREGLA LA GRILLA
+
+        // B) Volver a crear y agregar la mira naranja
+        addTargetHighlight(); // <--- ESTA LÍNEA ARREGLA EL CUADRO NARANJA
+
+        // 4. RESTAURAR DISPAROS (X, Bombas, Fuego)
+        restoreShotsVisuals(playerLogical, shipLayer);
+        restoreShotsVisuals(machineLogical, enemyLayer);
+
+        // 5. LÓGICA DE REVELADO
+        if (isEnemyFleetRevealed) {
+            drawMachineBoardRealShips();
+            btnReveal.setText("🚫 Ocultar Máquina");
+        } else {
+            btnReveal.setText("👁 Revelar Máquina");
+        }
     }
+
+    // =====================================================================
+    // MÉTODO AUXILIAR: BUSCAR BARCO DEL JUGADOR Y HACERLO FANTASMA
+    // =====================================================================
+    private void applyGhostEffectToPlayerShip(Ship ship) {
+        int startR = -1, startC = -1;
+        boolean found = false;
+
+        // 1. Encontrar la cabeza del barco lógico
+        for (int r = 0; r < 10 && !found; r++) {
+            for (int c = 0; c < 10 && !found; c++) {
+                if (playerLogical.peek(r, c).getShip() == ship) {
+                    startR = r;
+                    startC = c;
+                    found = true;
+                }
+            }
+        }
+
+        if (found) {
+            // 2. Calcular posición visual esperada
+            boolean isHorizontal = false;
+            if (ship.getSize() == 1) isHorizontal = true;
+            else if (startC + 1 < 10 && playerLogical.peek(startR, startC + 1).getShip() == ship) isHorizontal = true;
+
+            double expectedX, expectedY;
+            if (isHorizontal) {
+                expectedX = startC * CELL;
+                expectedY = startR * CELL;
+            } else {
+                double offset = CELL * (1 - ship.getSize()) / 2.0;
+                expectedX = (startC * CELL) + offset;
+                expectedY = (startR * CELL) - offset;
+            }
+
+            // 3. Buscar el Canvas y bajarle la opacidad
+            for (javafx.scene.Node node : shipLayer.getChildren()) {
+                if (node instanceof Canvas canvas &&
+                        Math.abs(canvas.getLayoutX() - expectedX) < 1.0 &&
+                        Math.abs(canvas.getLayoutY() - expectedY) < 1.0) {
+
+                    canvas.setOpacity(0.5); // ¡EFECTO FANTASMA!
+                    canvas.setMouseTransparent(true);
+                    break;
+                }
+            }
+        }
+    }
+
+    // =====================================================================
+    // NUEVO MÉTODO AUXILIAR PARA LA PERSISTENCIA
+    // Recorre un tablero lógico cargado y vuelve a pintar los disparos visualmente.
+    // =====================================================================
+    private void restoreShotsVisuals(Board logicalBoard, Pane targetLayer) {
+        java.util.Set<Ship> restoredShips = new java.util.HashSet<>();
+
+        for (int r = 0; r < 10; r++) {
+            for (int c = 0; c < 10; c++) {
+                Cell cell = logicalBoard.peek(r, c);
+
+                if (cell.isWasShot()) {
+                    ShotResult result;
+                    if (cell.isEmpty()) result = ShotResult.MISS;
+                    else if (cell.getShip().isSunk()) result = ShotResult.SUNK;
+                    else result = ShotResult.HIT;
+
+                    // 1. Pintar fuego/bomba/agua
+                    paintOnPane(targetLayer, r, c, result);
+
+                    // 2. RESTAURAR EFECTO FANTASMA (Solo una vez por barco)
+                    if (result == ShotResult.SUNK) {
+                        Ship ship = cell.getShip();
+
+                        if (!restoredShips.contains(ship)) {
+                            // CASO A: Tablero Enemigo (Dibujamos nuevo fantasma)
+                            if (targetLayer == enemyLayer) {
+                                drawSunkShipGhost(ship, r, c);
+                            }
+                            // CASO B: Tablero Jugador (Volvemos transparente el existente)
+                            else if (targetLayer == shipLayer) {
+                                applyGhostEffectToPlayerShip(ship);
+                            }
+
+                            restoredShips.add(ship);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     public void startNewGame(Board player,
                              Board machine,
                              String nickname,
