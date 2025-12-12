@@ -77,12 +77,29 @@ public class GameController {
     private void initPlayerFleet() {
 
         // Create ships through factories
-        List<Ship> fleet = List.of(
+        /*List<Ship> fleet = List.of(
                 new CarrierFactory().createShip(),     // size 4
                 new SubmarineFactory().createShip(),   // size 3
                 new DestroyerFactory().createShip(),   // size 2
                 new DestroyerFactory().createShip(),   // size 2
                 new FrigateFactory().createShip()      // size 1
+        );*/
+
+        // Create 10 ships.
+        List<Ship> fleet = List.of(
+                new CarrierFactory().createShip(),     // size 4 (1)
+
+                new SubmarineFactory().createShip(),   // size 3 (1)
+                new SubmarineFactory().createShip(),   // size 3 (2)
+
+                new DestroyerFactory().createShip(),   // size 2 (1)
+                new DestroyerFactory().createShip(),   // size 2 (2)
+                new DestroyerFactory().createShip(),   // size 2 (3)
+
+                new FrigateFactory().createShip(),      // size 1 (1)
+                new FrigateFactory().createShip(),      // size 1 (2)
+                new FrigateFactory().createShip(),      // size 1 (3)
+                new FrigateFactory().createShip()       // size 1 (4)
         );
 
         // Create graphics & add them to shipLayer
@@ -90,15 +107,13 @@ public class GameController {
         for (Ship ship : fleet) {
 
             Ship2D s2d = ShipAdapter.toGraphic(ship, true);
-
-            // Starting position (stacked visually)
-           // s2d.setLayoutX(20);
-            //s2d.setLayoutY(startY);
-
-            //startY += 70;
-
             registerShip(s2d, ship);
             fleetPanel.getChildren().add(s2d);
+
+            // Starting position (stacked visually)
+            // s2d.setLayoutX(20);
+            //s2d.setLayoutY(startY);
+            //startY += 70;
             //shipLayer.getChildren().add(s2d);
         }
     }
@@ -206,6 +221,7 @@ public class GameController {
 
         machineBoard.setOnMouseClicked(e -> {
 
+            // Row and column calculation
             int col = (int)(e.getX() / CELL);
             int row = (int)(e.getY() / CELL);
 
@@ -214,14 +230,42 @@ public class GameController {
 
             paint(machineBoard, row, col, result);
 
-            // AI shoots back
-            int[] aiShot = ai.shoot(playerLogical);
-            int r = aiShot[0];
-            int c = aiShot[1];
+            // Check player's victory
 
-            ShotResult machineResult = playerLogical.shoot(r, c);
-            paint(playerBoard, r, c, machineResult);
+            if (machineLogical.isGameOver()) {
+                // Manejar Fin de Juego (Jugador gana)
+                System.out.println("¡Victoria! Has hundido toda la flota enemiga.");
+                disableAllShooting(); // Detiene el juego
+                return;
+            }
+
+            // Turn Logic: If it's MISS, the AI shoots
+            if (result == ShotResult.MISS) {
+
+                // AI shoots back
+                int[] aiShot = ai.shoot(playerLogical);
+                int r = aiShot[0];
+                int c = aiShot[1];
+
+                ShotResult machineResult = playerLogical.shoot(r, c);
+                paint(playerBoard, r, c, machineResult);
+
+                //Check machine victory
+                if (playerLogical.isGameOver()) {
+                    // Game Over
+                    System.out.println("Derrota! La Máquina ha hundido tu flota.");
+                    disableAllShooting(); // Game stops.
+                }
+            } else {
+                // Si es HIT o SUNK, el turno se mantiene para el jugador.
+                System.out.println("Has adivinado! Sigue disparando.");
+            }
         });
+    }
+
+    private void disableAllShooting(){
+        machineBoard.setOnMouseClicked(null);
+        // Agregar lógica para mostrar mensaje de fin de juego.
     }
 
 
