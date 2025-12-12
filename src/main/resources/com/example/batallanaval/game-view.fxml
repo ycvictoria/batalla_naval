@@ -1,155 +1,200 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <?import javafx.geometry.Insets?>
-<?import javafx.scene.control.Button?>
-<?import javafx.scene.control.Label?>
-<?import javafx.scene.layout.BorderPane?>
-<?import javafx.scene.layout.ColumnConstraints?>
-<?import javafx.scene.layout.GridPane?>
-<?import javafx.scene.layout.HBox?>
-<?import javafx.scene.layout.Pane?>
-<?import javafx.scene.layout.RowConstraints?>
-<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
 
-<BorderPane fx:id="root" prefHeight="700" prefWidth="1200" xmlns:fx="http://javafx.com/fxml/1" xmlns="http://javafx.com/javafx/24.0.1  " fx:controller="com.example.batallanaval.controllers.GameController"
->
+<BorderPane xmlns="http://javafx.com/javafx/17.0.1"
+            xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.example.batallanaval.controllers.GameController"
+            style="-fx-background-color: linear-gradient(to bottom, #1e81b0, #76b5c5, #fef3c7);">
 
-    <!-- TOP -->
+    <!-- ===================== TOP ===================== -->
     <top>
-        <Label style="-fx-font-size: 28px; -fx-font-weight: bold; -fx-text-fill: #1a2a3a;" text="Batalla Naval" BorderPane.alignment="CENTER">
-
-        </Label>
+        <Label text="⚓ Batalla Naval"
+               BorderPane.alignment="CENTER"
+               style="-fx-font-size: 30px;
+                      -fx-font-weight: bold;
+                      -fx-text-fill: #ffffff;
+                      -fx-padding: 15;
+                      -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.4), 6, 0, 0, 2);" />
     </top>
 
-    <!-- CENTER -->
+    <!-- ===================== CENTER ===================== -->
     <center>
-        <HBox alignment="CENTER" spacing="40">
+        <HBox spacing="35" alignment="CENTER">
             <padding>
-                <Insets bottom="10" left="20" right="20" top="10" />
+                <Insets top="20" bottom="20"/>
             </padding>
 
-            <children>
-            <Pane>
-               <children>
+            <!-- ========= PLAYER PANEL ========= -->
+            <VBox spacing="12" alignment="TOP_CENTER"
+                  style="-fx-background-color: rgba(255,255,255,0.85);
+                         -fx-padding: 15;
+                         -fx-background-radius: 12;
+                         -fx-border-radius: 12;
+                         -fx-border-color: #1e81b0;
+                         -fx-border-width: 2;">
 
-                                                        <Label layoutX="17.33333396911621" style="-fx-font-size: 16px; -fx-font-weight: bold;" text="Barcos disponibles:" />
+                <Label text="🌊 Tu tablero"
+                       style="-fx-font-size: 18px; -fx-font-weight: bold;"/>
 
-                                                        <VBox layoutY="35.33332824707031" spacing="5">
-                              <children>
-                                  <Label text="0 Portaaviones" />
-                                  <Label text="0 Submarinos" />
-                                  <Label text="2 Destructores" />
-                                  <Label text="1 Fragata" />
-                              </children>
-                          </VBox>
+                <StackPane fx:id="playerArea">
+                    <GridPane fx:id="playerBoardView"
+                              gridLinesVisible="true"
+                              prefWidth="400" prefHeight="400"
+                              style="-fx-background-color: #dbeafe;
+                                     -fx-border-color: #1e81b0;
+                                     -fx-border-width: 2;">
+                        <columnConstraints>
+                            <ColumnConstraints percentWidth="10"/>
+                            <ColumnConstraints percentWidth="10"/>
+                            <ColumnConstraints percentWidth="10"/>
+                            <ColumnConstraints percentWidth="10"/>
+                            <ColumnConstraints percentWidth="10"/>
+                            <ColumnConstraints percentWidth="10"/>
+                            <ColumnConstraints percentWidth="10"/>
+                            <ColumnConstraints percentWidth="10"/>
+                            <ColumnConstraints percentWidth="10"/>
+                            <ColumnConstraints percentWidth="10"/>
+                        </columnConstraints>
+                        <rowConstraints>
+                            <RowConstraints percentHeight="10"/>
+                            <RowConstraints percentHeight="10"/>
+                            <RowConstraints percentHeight="10"/>
+                            <RowConstraints percentHeight="10"/>
+                            <RowConstraints percentHeight="10"/>
+                            <RowConstraints percentHeight="10"/>
+                            <RowConstraints percentHeight="10"/>
+                            <RowConstraints percentHeight="10"/>
+                            <RowConstraints percentHeight="10"/>
+                            <RowConstraints percentHeight="10"/>
+                        </rowConstraints>
+                    </GridPane>
+                    <Pane fx:id="shipLayer" pickOnBounds="false"/>
+                </StackPane>
+            </VBox>
 
-                                                        <Label layoutY="405.0" style="-fx-font-size: 14px; -fx-text-fill: gray;" text="Right-click to rotate the ship." />
-                  <Button fx:id="btnReveal1" layoutX="15.0" layoutY="432.0" style="-fx-font-size: 14px; -fx-padding: 6 12 6 12;" text="Cambiar la rotación de la nave" />
-               </children>
-            </Pane>
+            <!-- ========= INFO PANEL (CENTER) ========= -->
+            <VBox spacing="15" alignment="TOP_CENTER"
+                  prefWidth="260"
+                  style="-fx-background-color: rgba(255,248,220,0.95);
+                         -fx-padding: 20;
+                         -fx-background-radius: 14;
+                         -fx-border-radius: 14;
+                         -fx-border-color: #d97706;
+                         -fx-border-width: 3;
+                         -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.3), 8, 0, 0, 2);">
 
-                <!-- LEFT PANEL -->
-                <VBox alignment="TOP_CENTER" spacing="15">
+                <Label text="📜 Información"
+                       style="-fx-font-size: 20px;
+                              -fx-font-weight: bold;
+                              -fx-text-fill: #92400e;"/>
 
-                    <children>
-                  <VBox>
-                     <children>
-      
-                                    <Label style="-fx-font-size: 22px; -fx-font-weight: bold;" text="Flota del Jugador" />
-            
-                                    <!-- PLAYER BOARD -->
-                              <GridPane fx:id="playerBoard" gridLinesVisible="true" prefHeight="420" prefWidth="420" style="-fx-background-color: white; -fx-border-color: black;">
-            
-                                        <columnConstraints>
-                                      <ColumnConstraints percentWidth="10" />
-                                      <ColumnConstraints percentWidth="10" />
-                                      <ColumnConstraints percentWidth="10" />
-                                      <ColumnConstraints percentWidth="10" />
-                                      <ColumnConstraints percentWidth="10" />
-                                      <ColumnConstraints percentWidth="10" />
-                                      <ColumnConstraints percentWidth="10" />
-                                      <ColumnConstraints percentWidth="10" />
-                                      <ColumnConstraints percentWidth="10" />
-                                      <ColumnConstraints percentWidth="10" />
-                                  </columnConstraints>
-            
-                                        <rowConstraints>
-                                      <RowConstraints percentHeight="10" />
-                                      <RowConstraints percentHeight="10" />
-                                      <RowConstraints percentHeight="10" />
-                                      <RowConstraints percentHeight="10" />
-                                      <RowConstraints percentHeight="10" />
-                                      <RowConstraints percentHeight="10" />
-                                      <RowConstraints percentHeight="10" />
-                                      <RowConstraints percentHeight="10" />
-                                      <RowConstraints percentHeight="10" />
-                                      <RowConstraints percentHeight="10" />
-                                  </rowConstraints>
-            
-                                    </GridPane>
-                     </children>
-                  </VBox>
+                <HBox spacing="8">
+                    <Label text="🚢 Tu flota:"
+                           style="-fx-font-size: 15px;"/>
+                    <Label fx:id="playerShipsLabel"
+                           text="0"
+                           style="-fx-font-size: 18px;
+                                  -fx-font-weight: bold;
+                                  -fx-text-fill: #065f46;"/>
+                </HBox>
 
-                    </children>
+                <HBox spacing="8">
+                    <Label text="☠ Flota enemiga:"
+                           style="-fx-font-size: 15px;"/>
+                    <Label fx:id="machineShipsLabel"
+                           text="0"
+                           style="-fx-font-size: 18px;
+                                  -fx-font-weight: bold;
+                                  -fx-text-fill: #7f1d1d;"/>
+                </HBox>
 
+                <Button fx:id="btnStart"
+                        text="🚀 Iniciar batalla"
+                        prefWidth="200"
+                        style="-fx-background-color: #1e81b0;
+                               -fx-text-fill: white;
+                               -fx-font-size: 15px;
+                               -fx-font-weight: bold;
+                               -fx-background-radius: 8;"/>
+                <VBox spacing="10" alignment="CENTER">
+                    <TextArea fx:id="logArea"
+                              prefWidth="900"
+                              prefHeight="140"
+                              editable="false"
+                              wrapText="true"
+                              style="-fx-font-family: Consolas;
+                             -fx-font-size: 13px;
+                             -fx-background-color: rgba(255,255,255,0.9);
+                             -fx-border-color: #1e81b0;
+                             -fx-border-width: 2;
+                             -fx-background-radius: 8;"/>
                 </VBox>
+            </VBox>
 
-                <!-- RIGHT PANEL -->
-                <VBox alignment="TOP_CENTER" spacing="15">
+            <!-- ========= MACHINE PANEL ========= -->
+            <VBox spacing="12" alignment="TOP_CENTER"
+                  style="-fx-background-color: rgba(255,255,255,0.85);
+                         -fx-padding: 15;
+                         -fx-background-radius: 12;
+                         -fx-border-radius: 12;
+                         -fx-border-color: #7f1d1d;
+                         -fx-border-width: 2;">
 
-                    <children>
+                <Label text="🌊 Tablero enemigo"
+                       style="-fx-font-size: 18px; -fx-font-weight: bold;"/>
 
-                        <Label style="-fx-font-size: 22px; -fx-font-weight: bold;" text="Flota de la Máquina" />
+                <GridPane fx:id="machineBoardView"
+                          gridLinesVisible="true"
+                          prefWidth="400" prefHeight="400"
+                          style="-fx-background-color: #fee2e2;
+                                 -fx-border-color: #7f1d1d;
+                                 -fx-border-width: 2;">
+                    <columnConstraints>
+                        <ColumnConstraints percentWidth="10"/>
+                        <ColumnConstraints percentWidth="10"/>
+                        <ColumnConstraints percentWidth="10"/>
+                        <ColumnConstraints percentWidth="10"/>
+                        <ColumnConstraints percentWidth="10"/>
+                        <ColumnConstraints percentWidth="10"/>
+                        <ColumnConstraints percentWidth="10"/>
+                        <ColumnConstraints percentWidth="10"/>
+                        <ColumnConstraints percentWidth="10"/>
+                        <ColumnConstraints percentWidth="10"/>
+                    </columnConstraints>
+                    <rowConstraints>
+                        <RowConstraints percentHeight="10"/>
+                        <RowConstraints percentHeight="10"/>
+                        <RowConstraints percentHeight="10"/>
+                        <RowConstraints percentHeight="10"/>
+                        <RowConstraints percentHeight="10"/>
+                        <RowConstraints percentHeight="10"/>
+                        <RowConstraints percentHeight="10"/>
+                        <RowConstraints percentHeight="10"/>
+                        <RowConstraints percentHeight="10"/>
+                        <RowConstraints percentHeight="10"/>
+                    </rowConstraints>
+                </GridPane>
 
-                        <!-- MACHINE BOARD -->
-                        <GridPane fx:id="machineBoard" gridLinesVisible="true" prefHeight="420" prefWidth="420" style="-fx-background-color: white; -fx-border-color: black;">
+                <!-- BOTÓN REVELAR FLOTA -->
+                <Button fx:id="btnReveal"
+                        text="👁 Revelar flota enemiga"
+                        prefWidth="220"
+                        style="-fx-background-color: #7f1d1d;
+                               -fx-text-fill: white;
+                               -fx-font-size: 14px;
+                               -fx-font-weight: bold;
+                               -fx-background-radius: 8;"/>
+            </VBox>
 
-                            <columnConstraints>
-                                <ColumnConstraints percentWidth="10" />
-                                <ColumnConstraints percentWidth="10" />
-                                <ColumnConstraints percentWidth="10" />
-                                <ColumnConstraints percentWidth="10" />
-                                <ColumnConstraints percentWidth="10" />
-                                <ColumnConstraints percentWidth="10" />
-                                <ColumnConstraints percentWidth="10" />
-                                <ColumnConstraints percentWidth="10" />
-                                <ColumnConstraints percentWidth="10" />
-                                <ColumnConstraints percentWidth="10" />
-                            </columnConstraints>
-
-                            <rowConstraints>
-                                <RowConstraints percentHeight="10" />
-                                <RowConstraints percentHeight="10" />
-                                <RowConstraints percentHeight="10" />
-                                <RowConstraints percentHeight="10" />
-                                <RowConstraints percentHeight="10" />
-                                <RowConstraints percentHeight="10" />
-                                <RowConstraints percentHeight="10" />
-                                <RowConstraints percentHeight="10" />
-                                <RowConstraints percentHeight="10" />
-                                <RowConstraints percentHeight="10" />
-                            </rowConstraints>
-
-                        </GridPane>
-
-                        <Button fx:id="btnReveal" style="-fx-font-size: 14px; -fx-padding: 6 12 6 12;" text="Revelar Flota" />
-
-                    </children>
-
-                </VBox>
-
-            </children>
         </HBox>
     </center>
 
-    <!-- BOTTOM -->
+    <!-- ===================== BOTTOM ===================== -->
     <bottom>
-        <HBox alignment="CENTER" spacing="20">
 
-            <children>
-                <Button fx:id="btnStart" style="-fx-font-size: 18px; -fx-padding: 10 20 10 20;" text="Start Game" />
-            </children>
-        </HBox>
     </bottom>
 
 </BorderPane>

@@ -1,16 +1,17 @@
 package com.example.batallanaval.models;
 
-import com.example.batallanaval.models.Ship;
-import com.example.batallanaval.models.ShotResult;
+import com.example.batallanaval.observer.*;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 
-public class Board {
+public class Board implements Observable {
 
     private final int SIZE = 10;
-    private final Cell[][] grid = new Cell[SIZE][SIZE];
 
-    private final List<Ship> fleet = new ArrayList<>();
+    private final Cell[][] grid = new Cell[SIZE][SIZE];
+    private final List<Ship> ships = new ArrayList<>();
+    private final List<Observer> observers = new ArrayList<>();
 
     public Board() {
         for (int r = 0; r < SIZE; r++)
@@ -18,143 +19,105 @@ public class Board {
                 grid[r][c] = new Cell();
     }
 
-    // ==========================================================
-    // BASIC GETTERS
-    // ==========================================================
-    public int getSize() {
-        return SIZE;
+    public int getSize() { return SIZE; }
+
+    public Cell getCell(int r, int c) { return grid[r][c]; }
+
+    @Override
+    public void addObserver(Observer o) { observers.add(o); }
+
+    @Override
+    public void removeObserver(Observer o) { observers.remove(o); }
+
+    @Override
+    public void notifyObservers(Event e) {
+        for (Observer obs : observers)
+            obs.update(e);
     }
 
-    public Cell peek(int row, int col) {
-        return grid[row][col];
-    }
+    public boolean canPlace(Ship ship, int row, int col) {
+        if (col < 0 || row < 0 || row >= SIZE) return false;
+        if (col + ship.getSize() > SIZE) return false;
 
-    public boolean isFleetComplete() {
-        return !fleet.isEmpty() && fleet.stream().allMatch(Ship::isPlaced);
-    }
-
-    // ==========================================================
-    // SHIP PLACEMENT
-    // ==========================================================
-    public boolean canPlaceShip(Ship ship, int row, int col, boolean horiz) {
-
-        int length = ship.getLength();
-
-        // Boundaries
-        if (horiz) {
-            if (col + length > SIZE) return false;
-        } else {
-            if (row + length > SIZE) return false;
+        for (int i = 0; i < ship.getSize(); i++) {
+            if (grid[row][col + i].hasShip())
+                return false;
         }
-
-        // Check collisions
-        for (int i = 0; i < length; i++) {
-            int r = row + (horiz ? 0 : i);
-            int c = col + (horiz ? i : 0);
-
-            if (grid[r][c].hasShip()) return false;
-        }
-
         return true;
     }
 
-    public void placeShip(Ship ship, int row, int col, boolean horiz) {
+    public void place(Ship ship, int row, int col) {
+        ship.setRow(row);
+        ship.setCol(col);
 
-        int length = ship.getLength();
-
-        for (int i = 0; i < length; i++) {
-            int r = row + (horiz ? 0 : i);
-            int c = col + (horiz ? i : 0);
-
-            grid[r][c].ship = ship;
-        }
+        for (int i = 0; i < ship.getSize(); i++)
+            grid[row][col + i].setShip(ship);
 
         ship.setPlaced(true);
-        fleet.add(ship);
+        if (!ships.contains(ship))
+            ships.add(ship);
+
+        notifyObservers(new Event(EventType.FLEET_UPDATED, this, null));
     }
 
-    // ==========================================================
-    // SHOOTING LOGIC
-    // ==========================================================
-    public ShotResult shoot(int row, int col) {
+    public ShotResult shoot(int r, int c) {
 
-        Cell cell = grid[row][col];
+        if (r < 0 || c < 0 || r >= SIZE || c >= SIZE) return null;
 
-        // Already shot here?
-        if (cell.shot) return null;
+        Cell cell = grid[r][c];
 
-        cell.shot = true;
+        if (cell.wasShot()) return null;
+
+        cell.markShot();
 
         if (!cell.hasShip()) {
+            notifyObservers(new Event(EventType.MISS, this, new int[]{r, c}));
             return ShotResult.MISS;
         }
 
-        Ship ship = cell.ship;
-        ship.registerHit();
+        Ship s = cell.getShip();
+        s.hit();
 
-        if (ship.isSunk()) {
+        if (s.isSunk()) {
+            notifyObservers(new Event(EventType.SUNK, this, s));
+            if (isGameOver()) {
+                notifyObservers(new Event(EventType.GAME_OVER, this, null));
+            }
             return ShotResult.SUNK;
         }
 
+        notifyObservers(new Event(EventType.HIT, this, new int[]{r, c}));
         return ShotResult.HIT;
     }
 
-    // ==========================================================
-    // RANDOM FLEET GENERATION
-    // ==========================================================
-    public void randomizeShips() {
+    public boolean isGameOver() {
+        return ships.stream().allMatch(Ship::isSunk);
+    }
 
-        int[] lengths = {4, 3, 3, 2, 2, 2, 1, 1, 1, 1}; // típica flota
+    public int remainingShips() {
+        int count = 0;
+        for (Ship s : ships)
+            if (!s.isSunk()) count++;
+        return count;
+    }
+    public void randomize(Fleet fleet) {
 
-        for (int len : lengths) {
+        for (Ship ship : fleet.getShips()) {
 
-            Ship s = new Ship(len);
             boolean placed = false;
 
             while (!placed) {
 
-                int row = (int)(Math.random() * SIZE);
-                int col = (int)(Math.random() * SIZE);
-                boolean horiz = Math.random() < 0.5;
+                int row = (int) (Math.random() * SIZE);
+                int col = (int) (Math.random() * SIZE);
 
-                if (canPlaceShip(s, row, col, horiz)) {
-                    placeShip(s, row, col, horiz);
+                // Por ahora colocamos horizontal (como tu implementación previa)
+                if (canPlace(ship, row, col)) {
+                    place(ship, row, col);
                     placed = true;
                 }
             }
         }
     }
 
-    // ==========================================================
-    // INTERNAL CELL CLASS
-    // ==========================================================
-    public static class Cell {
-        private boolean shot = false;
-        private Ship ship = null;
-
-        public boolean hasShip() {
-            return ship != null;
-        }
-
-        public Ship getShip() {
-            return ship;
-        }
-
-        public boolean isShot() {
-            return shot;
-        }
-    }
-
-    // ==========================================================
-    // GAME OVER CHECK
-    // ==========================================================
-
-    // Verifica si todos los barcos de la flota han sido hundidos.
-
-    public boolean isGameOver() {
-        return !fleet.isEmpty() &&
-                fleet.stream().allMatch(Ship::isSunk);
-    }
 }
-
-

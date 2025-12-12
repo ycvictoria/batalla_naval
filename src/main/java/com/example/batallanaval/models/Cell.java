@@ -1,23 +1,15 @@
-
 package com.example.batallanaval.models;
 
-import java.io.Serializable;
+public class Cell {
 
-/**
- * Representa una celda del tablero.
- */
-public class Cell implements Serializable {
-
-    private boolean hasShip;
     private Ship ship;
-    private boolean shot;
+    private boolean shot = false;
 
-    public boolean hasShip() { return hasShip; }
+    public boolean hasShip() { return ship != null; }
     public Ship getShip() { return ship; }
-    public boolean isShot() { return shot; }
+    public boolean wasShot() { return shot; }
 
-    public void placeShip(Ship ship) {
-        this.hasShip = true;
+    public void setShip(Ship ship) {
         this.ship = ship;
     }
 

@@ -1,27 +1,29 @@
 package com.example.batallanaval.models;
+
 public class Ship {
 
-    private final int length;
+    private final int size;
     private int hits = 0;
+    private int row, col;
     private boolean placed = false;
 
-    public Ship(int length) {
-        this.length = length;
+    public Ship(int size) {
+        this.size = size;
     }
 
-    public int getLength() {
-        return length;
-    }
+    public int getSize() { return size; }
 
-    public int getSize() {   // ← NECESARIO para Ship2D
-        return length;
-    }
+    public void hit() { hits++; }
 
-    public void registerHit() { hits++; }
+    public boolean isSunk() { return hits >= size; }
 
-    public boolean isSunk() { return hits >= length; }
+    public int getRow() { return row; }
+    public int getCol() { return col; }
+
+    public void setRow(int row) { this.row = row; }
+    public void setCol(int col) { this.col = col; }
 
     public boolean isPlaced() { return placed; }
+    public void setPlaced(boolean placed) { this.placed = placed; }
 
-    public void setPlaced(boolean p) { placed = p; }
 }
