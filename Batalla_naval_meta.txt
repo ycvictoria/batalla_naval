@@ -1,0 +1,2 @@
+nickName: Jugador 1
+shipsSunk: 1

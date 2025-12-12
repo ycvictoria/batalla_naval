@@ -36,6 +36,13 @@ public class Ship2D extends Group {
         draw(Color.LIGHTGRAY);
     }
 
+    public void setOrientation(boolean horizontal) {
+        if(this.horizontal!=horizontal){
+            this.horizontal = horizontal;
+            draw(Color.LIGHTGRAY);
+        }
+
+    }
     public boolean isHorizontal() { return horizontal; }
 
     public void setColor(Color c) { draw(c); }

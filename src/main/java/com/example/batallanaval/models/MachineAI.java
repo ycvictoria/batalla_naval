@@ -1,6 +1,7 @@
 package com.example.batallanaval.models;
 
 import com.example.batallanaval.models.Board;
+import java.io.Serializable;
 
 import java.util.*;
 
@@ -10,7 +11,8 @@ import java.util.*;
  * - Cuando acierta, agrega los vecinos como objetivos prioritarios.
  * - Nunca dispara dos veces a la misma casilla.
  */
-public class MachineAI {
+public class MachineAI implements Serializable {
+    private static final long serialVersionUID = 103L;
 
     private final Random random = new Random();
 

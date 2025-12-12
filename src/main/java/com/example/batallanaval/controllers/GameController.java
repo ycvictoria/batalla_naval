@@ -6,6 +6,8 @@ import com.example.batallanaval.views.ShipAdapter;
 
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
+import javafx.scene.control.ButtonBar;
+import javafx.scene.control.ButtonType;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.GridPane;
@@ -16,19 +18,28 @@ import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 
 import java.util.List;
+import java.util.Optional;
 
 public class GameController {
 
     // ========= FXML ELEMENTS =========
-    @FXML private VBox fleetPanel;
-    @FXML private StackPane playerArea;
-    @FXML private Pane shipLayer;
-    @FXML private GridPane playerBoard;
-    @FXML private GridPane machineBoard;
+    @FXML
+    private VBox fleetPanel;
+    @FXML
+    private StackPane playerArea;
+    @FXML
+    private Pane shipLayer;
+    @FXML
+    private GridPane playerBoard;
+    @FXML
+    private GridPane machineBoard;
 
-    @FXML private Button btnRotate;
-    @FXML private Button btnReveal;
-    @FXML private Button btnStart;
+    @FXML
+    private Button btnRotate;
+    @FXML
+    private Button btnReveal;
+    @FXML
+    private Button btnStart;
 
     // ========= GAME LOGIC =========
     private final int CELL = 40;
@@ -42,6 +53,8 @@ public class GameController {
     private Ship2D selectedShip = null;
     private Ship2D dragging = null;
     private double offsetX, offsetY;
+    private String nickName = "Jugador 1";
+    private int playerShipsSunk = 0;
 
 
     // =====================================================================
@@ -49,43 +62,33 @@ public class GameController {
     // =====================================================================
     @FXML
     public void initialize() {
+        // iniciar un juego cargado
+        if (loadPendingGame()) {
+            System.out.println("Juego pendiente cargado. A continuar con la batalla");
+        } else {
+            // Generate enemy fleet
+            machineLogical.randomizeShips();
 
-        // Generate enemy fleet
-        machineLogical.randomizeShips();
+            // Generate player fleet and initialize dragging behavior
+            initPlayerFleet();
 
-        // Generate player fleet and initialize dragging behavior
-        initPlayerFleet();
-
+        }
         // Rotate ship button
         btnRotate.setOnAction(e -> rotateSelectedShip());
-
         // Reveal machine board (debug)
         btnReveal.setOnAction(e -> revealEnemyFleet());
-
         // Start battle button
-        btnStart.setDisable(true); // initially disabled
+        btnStart.setDisable(false);
         btnStart.setOnAction(e -> startBattlePhase());
-
         // Disable shooting until battle start
         enableMachineShotEvents(false);
     }
-
 
     // =====================================================================
     // PLAYER FLEET INITIALIZATION
     // =====================================================================
     private void initPlayerFleet() {
 
-        // Create ships through factories
-        /*List<Ship> fleet = List.of(
-                new CarrierFactory().createShip(),     // size 4
-                new SubmarineFactory().createShip(),   // size 3
-                new DestroyerFactory().createShip(),   // size 2
-                new DestroyerFactory().createShip(),   // size 2
-                new FrigateFactory().createShip()      // size 1
-        );*/
-
-        // Create 10 ships.
         List<Ship> fleet = List.of(
                 new CarrierFactory().createShip(),     // size 4 (1)
 
@@ -239,6 +242,8 @@ public class GameController {
                 return;
             }
 
+            playerShipsSunk = (int) machineLogical.getSunkShipCount();
+
             // Turn Logic: If it's MISS, the AI shoots
             if (result == ShotResult.MISS) {
 
@@ -260,6 +265,8 @@ public class GameController {
                 // Si es HIT o SUNK, el turno se mantiene para el jugador.
                 System.out.println("Has adivinado! Sigue disparando.");
             }
+            //guardar el estado del juego luego del turno
+            SaveGame.saveGame(playerLogical,machineLogical, ai, nickName, playerShipsSunk);
         });
     }
 
@@ -321,4 +328,114 @@ public class GameController {
             }
         }
     }
+
+    private void saveGameAct(){
+        SaveGame.saveGame(playerLogical, machineLogical, ai,nickName,playerShipsSunk);
+    }
+
+    private boolean loadPendingGame() {
+        Object[] loadedData = SaveGame.restartGame();
+
+        if (loadedData == null) {
+            return false; // No hay juego guardado o hubo error
+        }
+
+        // Asignar los objetos cargados a las variables de instancia
+        playerLogical = (Board) loadedData[0];
+        machineLogical = (Board) loadedData[1];
+        ai = (MachineAI) loadedData[2];
+
+        // Determinar la fase del juego
+        // Si el tablero del jugador está completo y se han realizado disparos
+        boolean hadShots = playerLogical.getShotsTaken() > 0 || machineLogical.getShotsTaken() > 0;
+
+        if (playerLogical.isFleetComplete() && hadShots) {
+            placementPhase = false;
+
+            // Regenerar la vista gráfica de los barcos del jugador
+            recreatePlayerShipsVisuals();
+
+            // Dibujar los disparos realizados en ambos tableros
+            recreateShotsVisuals(playerBoard, playerLogical);
+            recreateShotsVisuals(machineBoard, machineLogical);
+        } else {
+            // Se cargó un juego en fase de colocación.
+            placementPhase = true;
+            recreatePlayerShipsVisuals();
+        }
+
+        return true;
+    }
+
+// =====================================================================
+// NEW: RECREATE VISUALS AFTER LOAD
+// =====================================================================
+
+    // Debe iterar sobre los barcos lógicos y crear sus contrapartes Ship2D y colocarlas
+    private void recreatePlayerShipsVisuals() {
+        // 1. Limpiar la capa de barcos actual si es necesario
+        shipLayer.getChildren().clear();
+        fleetPanel.getChildren().clear();
+
+        // 2. Iterar sobre todos los barcos del tablero lógico del jugador
+        for (Ship ship : playerLogical.getShips()) {
+
+            Ship2D s2d = ShipAdapter.toGraphic(ship, true);
+            registerShip(s2d, ship); // Re-registrar eventos de arrastre/rotación
+
+            if (ship.isPlaced()) {
+                // El barco estaba colocado, colocarlo en el lugar correcto en la capa de barcos
+                int row = ship.getTopRow();
+                int col = ship.getLeftCol();
+
+                s2d.setOrientation(ship.isHorizontal()); // Aplicar orientación guardada
+                s2d.setLayoutX(playerBoard.getLayoutX() + col * CELL);
+                s2d.setLayoutY(playerBoard.getLayoutY() + row * CELL);
+                s2d.setColor(Color.WHITE);
+                shipLayer.getChildren().add(s2d);
+
+            } else {
+                // El barco no estaba colocado, devolverlo al panel de flota
+                fleetPanel.getChildren().add(s2d);
+            }
+        }
+    }
+
+    // Debe dibujar los rectángulos de los disparos guardados en el tablero lógico
+    private void recreateShotsVisuals(GridPane pane, Board board) {
+        pane.getChildren().clear();
+
+        for (int r = 0; r < board.getSize(); r++) {
+            for (int c = 0; c < board.getSize(); c++) {
+                Cell cell = board.peek(r, c);
+
+                if (cell.isShot()) {
+
+                    ShotResult result;
+
+                    if (cell.hasShip()) {
+                        // Verificar si el barco en esa celda está hundido
+                        if (cell.getShip().isSunk()) { // <-- Requiere getShip().isSunk()
+                            result = ShotResult.SUNK;
+                        } else {
+                            result = ShotResult.HIT;
+                        }
+                    } else {
+                        result = ShotResult.MISS;
+                    }
+
+                    // Si el resultado es SUNK, debemos pintar todas las celdas del barco hundido.
+                    // Sin embargo, el método 'paint' en tu controlador solo pinta una celda.
+                    // Para simplificar, pintaremos cada celda por separado.
+                    paint(pane, r, c, result);
+                }
+            }
+        }
+        // Nota: Si un barco está SUNK, se pintará cada celda que haya sido disparada
+        // con el color SUNK. Esto es suficiente para la visualización.
+    }
+
 }
+
+
+

@@ -2,15 +2,18 @@ package com.example.batallanaval.models;
 
 import com.example.batallanaval.models.Ship;
 import com.example.batallanaval.models.ShotResult;
+import java.io.Serializable;
 
 import java.util.*;
 
-public class Board {
+public class Board implements Serializable {
+    private static final long serialVersionUID = 1L;
 
     private final int SIZE = 10;
     private final Cell[][] grid = new Cell[SIZE][SIZE];
-
+    private int totalShots = 0;
     private final List<Ship> fleet = new ArrayList<>();
+    private List<Ship> ships = new ArrayList<>();
 
     public Board() {
         for (int r = 0; r < SIZE; r++)
@@ -66,11 +69,19 @@ public class Board {
             int r = row + (horiz ? 0 : i);
             int c = col + (horiz ? i : 0);
 
-            grid[r][c].ship = ship;
+            grid[r][c].placeShip(ship); // ¡Esto resuelve el error de acceso privado!
+        }
+        ship.setPlacement(row, col, horiz);
+
+        if(!ships.contains(ship)) {
+            ships.add(ship);
         }
 
-        ship.setPlaced(true);
         fleet.add(ship);
+    }
+
+    public List<Ship> getShips() {
+        return this.ships;
     }
 
     // ==========================================================
@@ -81,15 +92,17 @@ public class Board {
         Cell cell = grid[row][col];
 
         // Already shot here?
-        if (cell.shot) return null;
+        if (cell.isShot()) return null;
 
-        cell.shot = true;
+        cell.markShot();
+
+        this.totalShots++;
 
         if (!cell.hasShip()) {
             return ShotResult.MISS;
         }
 
-        Ship ship = cell.ship;
+        Ship ship = cell.getShip();
         ship.registerHit();
 
         if (ship.isSunk()) {
@@ -125,25 +138,6 @@ public class Board {
         }
     }
 
-    // ==========================================================
-    // INTERNAL CELL CLASS
-    // ==========================================================
-    public static class Cell {
-        private boolean shot = false;
-        private Ship ship = null;
-
-        public boolean hasShip() {
-            return ship != null;
-        }
-
-        public Ship getShip() {
-            return ship;
-        }
-
-        public boolean isShot() {
-            return shot;
-        }
-    }
 
     // ==========================================================
     // GAME OVER CHECK
@@ -154,6 +148,14 @@ public class Board {
     public boolean isGameOver() {
         return !fleet.isEmpty() &&
                 fleet.stream().allMatch(Ship::isSunk);
+    }
+
+    public int getShotsTaken() {
+        return totalShots;
+    }
+
+    public long getSunkShipCount() {
+        return fleet.stream().filter(Ship::isSunk).count();
     }
 }
 
