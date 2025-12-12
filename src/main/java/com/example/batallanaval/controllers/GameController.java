@@ -28,6 +28,8 @@ public class GameController implements Observer {
     @FXML private Pane shipLayer;
 
     @FXML private Button btnStart;
+
+    @FXML private Button btnReveal;
     @FXML private Label playerShipsLabel;
     @FXML private Label machineShipsLabel;
     @FXML private TextArea logArea;
@@ -63,6 +65,7 @@ public class GameController implements Observer {
 
         btnStart.setDisable(true);
         btnStart.setOnAction(e -> startBattle());
+        btnReveal.setOnAction(e->revealEnemyFleet());
 
         updateHUD();
     }
@@ -148,7 +151,7 @@ public class GameController implements Observer {
         shipLayer.setMouseTransparent(true);
 
         machineBoardView.setOnMouseClicked(this::handlePlayerShot);
-
+        btnReveal.setDisable(true);
         log("⚔ ¡Comienza la batalla!");
     }
 
@@ -227,4 +230,34 @@ public class GameController implements Observer {
             }
         }
     }
+    private void revealEnemyFleet() {
+
+        // Evitar revelar durante la batalla real
+        if (!placementPhase) {
+            log("⚠ No puedes revelar la flota durante la batalla.");
+            return;
+        }
+
+        // Limpiar marcas previas (si se presiona varias veces)
+        machineBoardView.getChildren().removeIf(n -> n.getUserData() != null);
+
+        for (int row = 0; row < 10; row++) {
+            for (int col = 0; col < 10; col++) {
+
+                Cell cell = machineBoardModel.getCell(row, col);
+
+                if (cell.hasShip()) {
+                    Rectangle r = new Rectangle(CELL, CELL);
+                    r.setFill(Color.rgb(0, 0, 0, 0.25)); // sombra oscura
+                    r.setStroke(Color.DARKRED);
+                    r.setUserData("reveal"); // marca para poder borrar luego
+
+                    machineBoardView.add(r, col, row);
+                }
+            }
+        }
+
+        log("👁 Flota enemiga revelada (modo observación)");
+    }
+
 }
