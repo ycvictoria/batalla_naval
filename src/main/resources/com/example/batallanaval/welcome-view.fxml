@@ -8,7 +8,7 @@
            fx:controller="com.example.batallanaval.controllers.WelcomeController"
            style="-fx-background-color: radial-gradient(radius 100%, #1e3a8a, #020617);">
 
-    <VBox alignment="CENTER" spacing="20">
+    <VBox alignment="CENTER" spacing="18">
 
         <Label text="BATALLA NAVAL"
                style="-fx-font-family: 'Courier New';
@@ -17,30 +17,59 @@
                       -fx-font-weight: bold;
                       -fx-effect: dropshadow(gaussian, #38bdf8, 10, 0.4, 0, 0);" />
 
-        <Button text="▶ CONTINUAR JUEGO"
-                fx:id="btnContinue"
+        <!-- CONTINUAR -->
+        <Button fx:id="btnContinue"
+                text="▶ CONTINUAR JUEGO"
                 prefWidth="260"
                 style="-fx-font-family: 'Courier New';
                        -fx-font-size: 16px;
-                       -fx-background-color: #020617;
+                       -fx-background-color: transparent;
                        -fx-text-fill: #38bdf8;
                        -fx-border-color: #38bdf8;" />
 
-        <Button text="🆕 NUEVO JUEGO"
-                fx:id="btnNew"
+        <!-- NUEVO JUEGO -->
+        <Button fx:id="btnNew"
+                text="🆕 NUEVO JUEGO"
                 prefWidth="260"
                 style="-fx-font-family: 'Courier New';
                        -fx-font-size: 16px;
-                       -fx-background-color: #020617;
+                       -fx-background-color: transparent;
                        -fx-text-fill: #a7f3d0;
                        -fx-border-color: #a7f3d0;" />
 
-        <Button text="⏹ SALIR"
-                fx:id="btnExit"
+        <!-- SECCIÓN NUEVO JUEGO (OCULTA) -->
+        <HBox fx:id="newGameBox"
+              spacing="10"
+              alignment="CENTER"
+              visible="false"
+              managed="false">
+
+            <TextField fx:id="nameField"
+                       promptText="Nombre del jugador"
+                       prefWidth="180"
+                       style="-fx-font-family: 'Courier New';
+                              -fx-font-size: 14px;
+                              -fx-background-color: #020617;
+                              -fx-text-fill: #e0f2fe;
+                              -fx-border-color: #a7f3d0;" />
+
+            <Button fx:id="btnAccept"
+                    text="✔"
+                    prefWidth="50"
+                    style="-fx-font-family: 'Courier New';
+                           -fx-font-size: 14px;
+                           -fx-background-color: #020617;
+                           -fx-text-fill: #a7f3d0;
+                           -fx-border-color: #a7f3d0;" />
+        </HBox>
+
+        <!-- SALIR -->
+        <Button fx:id="btnExit"
+                text="⏹ SALIR"
                 prefWidth="260"
                 style="-fx-font-family: 'Courier New';
                        -fx-font-size: 16px;
-                       -fx-background-color: #020617;
+                       -fx-background-color: transparent;
                        -fx-text-fill: #fecaca;
                        -fx-border-color: #fecaca;" />
 

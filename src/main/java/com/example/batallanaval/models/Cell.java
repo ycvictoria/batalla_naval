@@ -7,6 +7,8 @@ import java.io.Serializable;
  * Representa una celda del tablero.
  */
 public class Cell implements Serializable {
+    //para serializar
+    private static final long serialVersionUID = 1L;
 
     private boolean hasShip;
     private Ship ship;

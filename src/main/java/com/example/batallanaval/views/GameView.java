@@ -13,7 +13,7 @@ public class GameView extends Stage {
     private GameController gameController;
 
     public GameView() throws IOException {
-        this.setTitle("Craps Game");
+        this.setTitle("Batalla Naval Game");
         FXMLLoader fxmlLoader = new FXMLLoader(
                 getClass().getResource("/com/example/batallanaval/game-view.fxml")
         );
@@ -23,9 +23,7 @@ public class GameView extends Stage {
         this.setMaxHeight(600);
         this.setMaxWidth(600);
         this.setScene(scene);
-      /*  this.getIcons().add(
-                new Image(getClass().getResourceAsStream("/com/example/crapsgame80/images/favicon.png"))
-        );*/
+
     }
 
     public GameController getGameController() {
@@ -38,6 +36,7 @@ public class GameView extends Stage {
         }
         return GameViewHolder.INSTANCE;
     }
+
 
     private static class GameViewHolder {
         private static GameView INSTANCE = null;
