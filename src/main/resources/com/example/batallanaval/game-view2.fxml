@@ -7,22 +7,16 @@
 <?import javafx.scene.layout.ColumnConstraints?>
 <?import javafx.scene.layout.GridPane?>
 <?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Pane?>
 <?import javafx.scene.layout.RowConstraints?>
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
-<?import javafx.scene.layout.Pane?>
 
-<BorderPane fx:id="root" prefHeight="800" prefWidth="1400"
-            xmlns="http://javafx.com/javafx/17.0.2"
-            xmlns:fx="http://javafx.com/fxml/1"
-            fx:controller="com.example.batallanaval.controllers.GameController"
-            stylesheets="@theme.css">
+<BorderPane fx:id="root" prefHeight="800" prefWidth="1400" stylesheets="@theme.css" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.batallanaval.controllers.GameController">
 
     <!-- =========================== TOP TITLE =========================== -->
     <top>
-        <Label text="🌊 Batalla Naval"
-               styleClass="title-label"
-               BorderPane.alignment="CENTER"/>
+        <Label styleClass="title-label" text="🌊 Batalla Naval" BorderPane.alignment="CENTER" />
     </top>
 
 
@@ -30,32 +24,25 @@
     <center>
         <HBox alignment="CENTER" spacing="60">
             <padding>
-                <Insets top="20" bottom="20"/>
+                <Insets bottom="20" top="20" />
             </padding>
 
 
             <!-- ============ LEFT PANEL: FLEET TO PLACE ============ -->
-            <VBox spacing="20" alignment="TOP_CENTER" fx:id="fleetPanel">
+            <VBox fx:id="fleetPanel" alignment="TOP_CENTER" spacing="20">
 
-                <Label text="Tu Flota"
-                       styleClass="section-label"/>
+                <Label styleClass="section-label" text="Tu Flota" />
 
                 <VBox spacing="8">
-                    <Label text="🛳 Portaaviones (4)" styleClass="ship-label"/>
-                    <Label text="🚤 Submarino (3)" styleClass="ship-label"/>
-                    <Label text="🛥 Destructor (2)" styleClass="ship-label"/>
-                    <Label text="⛵ Fragata (1)" styleClass="ship-label"/>
+                    <Label styleClass="ship-label" text="🛳 Portaaviones (4)" />
+                    <Label styleClass="ship-label" text="🚤 Submarino (3)" />
+                    <Label styleClass="ship-label" text="🛥 Destructor (2)" />
+                    <Label styleClass="ship-label" text="⛵ Fragata (1)" />
                 </VBox>
 
-                <Button fx:id="btnRotate"
-                        text="🔄 Rotar Barco"
-                        prefWidth="220"
-                        styleClass="button"/>
+                <Button fx:id="btnRotate" prefWidth="220" styleClass="button" text="🔄 Rotar Barco" />
 
-                <Button fx:id="btnReveal"
-                        text="👁 Revelar Máquina"
-                        prefWidth="220"
-                        styleClass="reveal-button"/>
+                <Button fx:id="btnReveal" prefWidth="220" styleClass="reveal-button" text="👁 Revelar Máquina" />
 
 
 
@@ -66,48 +53,43 @@
             <!-- ============ PLAYER BOARD AREA ============ -->
             <VBox alignment="TOP_CENTER" spacing="15">
 
-                <Label text="Tablero del Jugador"
-                       styleClass="section-label"/>
+                <Label styleClass="section-label" text="Tablero del Jugador" />
 
                 <!-- STACKPANE PARA SUPERPONER SHIP2D SOBRE GRIDPANE -->
                 <StackPane fx:id="playerArea">
 
-                    <GridPane fx:id="playerBoard"
-                              styleClass="board"
-                              gridLinesVisible="true"
-                              prefWidth="500"
-                              prefHeight="500">
+                          <GridPane fx:id="playerBoard" gridLinesVisible="true" prefHeight="500" prefWidth="500" styleClass="board">
 
-                        <columnConstraints>
-                            <ColumnConstraints percentWidth="10"/>
-                            <ColumnConstraints percentWidth="10"/>
-                            <ColumnConstraints percentWidth="10"/>
-                            <ColumnConstraints percentWidth="10"/>
-                            <ColumnConstraints percentWidth="10"/>
-                            <ColumnConstraints percentWidth="10"/>
-                            <ColumnConstraints percentWidth="10"/>
-                            <ColumnConstraints percentWidth="10"/>
-                            <ColumnConstraints percentWidth="10"/>
-                            <ColumnConstraints percentWidth="10"/>
+                              <columnConstraints>
+                            <ColumnConstraints percentWidth="10" />
+                            <ColumnConstraints percentWidth="10" />
+                            <ColumnConstraints percentWidth="10" />
+                            <ColumnConstraints percentWidth="10" />
+                            <ColumnConstraints percentWidth="10" />
+                            <ColumnConstraints percentWidth="10" />
+                            <ColumnConstraints percentWidth="10" />
+                            <ColumnConstraints percentWidth="10" />
+                            <ColumnConstraints percentWidth="10" />
+                            <ColumnConstraints percentWidth="10" />
                         </columnConstraints>
 
-                        <rowConstraints>
-                            <RowConstraints percentHeight="10"/>
-                            <RowConstraints percentHeight="10"/>
-                            <RowConstraints percentHeight="10"/>
-                            <RowConstraints percentHeight="10"/>
-                            <RowConstraints percentHeight="10"/>
-                            <RowConstraints percentHeight="10"/>
-                            <RowConstraints percentHeight="10"/>
-                            <RowConstraints percentHeight="10"/>
-                            <RowConstraints percentHeight="10"/>
-                            <RowConstraints percentHeight="10"/>
+                              <rowConstraints>
+                            <RowConstraints percentHeight="10" />
+                            <RowConstraints percentHeight="10" />
+                            <RowConstraints percentHeight="10" />
+                            <RowConstraints percentHeight="10" />
+                            <RowConstraints percentHeight="10" />
+                            <RowConstraints percentHeight="10" />
+                            <RowConstraints percentHeight="10" />
+                            <RowConstraints percentHeight="10" />
+                            <RowConstraints percentHeight="10" />
+                            <RowConstraints percentHeight="10" />
                         </rowConstraints>
 
-                    </GridPane>
+                          </GridPane>
 
                     <!-- Aquí se dibujan los Ship2D mientras se arrastran -->
-                    <Pane fx:id="shipLayer" pickOnBounds="false"/>
+                    <Pane fx:id="shipLayer" pickOnBounds="false" />
 
                 </StackPane>
 
@@ -116,39 +98,34 @@
             <!-- ============ MACHINE BOARD AREA ============ -->
             <VBox alignment="TOP_CENTER" spacing="20">
 
-                <Label text="Tablero de la Máquina"
-                       styleClass="section-label"/>
+                <Label styleClass="section-label" text="Tablero de la Máquina" />
 
-                <GridPane fx:id="machineBoard"
-                          styleClass="board"
-                          gridLinesVisible="true"
-                          prefWidth="500"
-                          prefHeight="500">
+                <GridPane fx:id="machineBoard" gridLinesVisible="true" prefHeight="500" prefWidth="500" styleClass="board">
 
                     <columnConstraints>
-                        <ColumnConstraints percentWidth="10"/>
-                        <ColumnConstraints percentWidth="10"/>
-                        <ColumnConstraints percentWidth="10"/>
-                        <ColumnConstraints percentWidth="10"/>
-                        <ColumnConstraints percentWidth="10"/>
-                        <ColumnConstraints percentWidth="10"/>
-                        <ColumnConstraints percentWidth="10"/>
-                        <ColumnConstraints percentWidth="10"/>
-                        <ColumnConstraints percentWidth="10"/>
-                        <ColumnConstraints percentWidth="10"/>
+                        <ColumnConstraints percentWidth="10" />
+                        <ColumnConstraints percentWidth="10" />
+                        <ColumnConstraints percentWidth="10" />
+                        <ColumnConstraints percentWidth="10" />
+                        <ColumnConstraints percentWidth="10" />
+                        <ColumnConstraints percentWidth="10" />
+                        <ColumnConstraints percentWidth="10" />
+                        <ColumnConstraints percentWidth="10" />
+                        <ColumnConstraints percentWidth="10" />
+                        <ColumnConstraints percentWidth="10" />
                     </columnConstraints>
 
                     <rowConstraints>
-                        <RowConstraints percentHeight="10"/>
-                        <RowConstraints percentHeight="10"/>
-                        <RowConstraints percentHeight="10"/>
-                        <RowConstraints percentHeight="10"/>
-                        <RowConstraints percentHeight="10"/>
-                        <RowConstraints percentHeight="10"/>
-                        <RowConstraints percentHeight="10"/>
-                        <RowConstraints percentHeight="10"/>
-                        <RowConstraints percentHeight="10"/>
-                        <RowConstraints percentHeight="10"/>
+                        <RowConstraints percentHeight="10" />
+                        <RowConstraints percentHeight="10" />
+                        <RowConstraints percentHeight="10" />
+                        <RowConstraints percentHeight="10" />
+                        <RowConstraints percentHeight="10" />
+                        <RowConstraints percentHeight="10" />
+                        <RowConstraints percentHeight="10" />
+                        <RowConstraints percentHeight="10" />
+                        <RowConstraints percentHeight="10" />
+                        <RowConstraints percentHeight="10" />
                     </rowConstraints>
 
                 </GridPane>
@@ -164,16 +141,10 @@
     <bottom>
         <HBox alignment="CENTER" spacing="20">
             <padding>
-                <Insets top="10" right="10" bottom="10" left="10"/>
+                <Insets bottom="10" left="10" right="10" top="10" />
             </padding>
             <!-- START GAME BUTTON (DEBE ACTIVARSE) -->
-            <Button fx:id="btnStart"
-                    text="🚀 Iniciar Batalla"
-                    prefWidth="220"
-                    disable="true"
-                    styleClass="start-button"
-                    style="-fx-font-size: 18px;"
-            />
+            <Button fx:id="btnStart" disable="true" prefWidth="220" style="-fx-font-size: 18px;" styleClass="start-button" text="🚀 Iniciar Batalla" />
 
         </HBox>
     </bottom>

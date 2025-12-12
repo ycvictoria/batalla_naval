@@ -144,4 +144,17 @@ public class Board {
             return shot;
         }
     }
+
+    // ==========================================================
+    // GAME OVER CHECK
+    // ==========================================================
+
+    // Verifica si todos los barcos de la flota han sido hundidos.
+
+    public boolean isGameOver() {
+        return !fleet.isEmpty() &&
+                fleet.stream().allMatch(Ship::isSunk);
+    }
 }
+
+
