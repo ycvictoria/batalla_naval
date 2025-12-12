@@ -6,4 +6,5 @@ module com.example.batallanaval {
 
     opens com.example.batallanaval.controllers to javafx.fxml;
     exports com.example.batallanaval;
+    exports com.example.batallanaval.controllers;
 }

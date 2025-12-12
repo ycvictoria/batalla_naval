@@ -30,7 +30,7 @@ public class Board {
     }
 
     public boolean isFleetComplete() {
-        return !fleet.isEmpty() && fleet.stream().allMatch(Ship::isPlaced);
+        return fleet.size() == 10;
     }
 
     // ==========================================================
@@ -154,6 +154,15 @@ public class Board {
     public boolean isGameOver() {
         return !fleet.isEmpty() &&
                 fleet.stream().allMatch(Ship::isSunk);
+    }
+
+    public void clear() {
+        for (int r = 0; r < SIZE; r++) {
+            for (int c = 0; c < SIZE; c++) {
+                grid[r][c] = new Cell(); // Reinicia la celda
+            }
+        }
+        fleet.clear(); // Borra la lista de barcos
     }
 }
 
