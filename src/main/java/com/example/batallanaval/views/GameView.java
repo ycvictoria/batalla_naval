@@ -20,8 +20,11 @@ public class GameView extends Stage {
         Parent root = fxmlLoader.load();
         gameController = fxmlLoader.getController();
         Scene scene = new Scene(root);
-        this.setMaxHeight(600);
-        this.setMaxWidth(600);
+        // Tamaño mínimo decente
+        this.setMinWidth(1000);
+        this.setMinHeight(700);
+        // Abre la ventana maximizada
+        this.setMaximized(true);
         this.setScene(scene);
 
     }

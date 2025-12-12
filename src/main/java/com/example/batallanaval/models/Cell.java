@@ -34,4 +34,13 @@ public class Cell implements Serializable {
     public void markShot() {
         this.shot = true;
     }
+
+    public boolean isWasShot() {
+        return shot;
+    }
+
+    // 2. Método para saber si es agua (no hay barco)
+    public boolean isEmpty() {
+        return !hasShip;
+    }
 }

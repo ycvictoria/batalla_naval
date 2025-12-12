@@ -28,6 +28,11 @@ public class WelcomeController {
     // ======================
     @FXML
     public void initialize() {
+        // VERIFICAR SI HAY PARTIDA GUARDADA
+        // Si no existe el archivo, deshabilitamos el botón de Continuar
+        if (SaveManager.loadPlayerInfo() == null) {
+            btnContinue.setDisable(true);
+        }
 
         // Ocultar sección de nuevo juego al inicio
         newGameBox.setVisible(false);
