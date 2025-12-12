@@ -1,6 +1,7 @@
 package com.example.batallanaval.controllers;
 
 import com.example.batallanaval.models.*;
+import com.example.batallanaval.persistence.SaveManager;
 import com.example.batallanaval.views.BoardVisualizer;
 import com.example.batallanaval.views.CanvasMarkerRenderer;
 import com.example.batallanaval.views.CanvasShipRenderer;
@@ -13,6 +14,7 @@ import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
+import javafx.stage.Stage;
 
 public class GameController {
 
@@ -39,10 +41,12 @@ public class GameController {
     // ========= GAME LOGIC =========
     private final int CELL = 50;
     private boolean placementPhase = true;
-
+    private String playerNickname;
     private Board playerLogical = new Board();
     private Board machineLogical = new Board();
+
     private MachineAI ai = new MachineAI();
+    private int numSunkShips ;
 
     // ========= NUEVOS GESTORES VISUALES =========
     private ShipPlacementManager placementManager;
@@ -61,7 +65,8 @@ public class GameController {
     public void initialize() {
 
         // 1. Inicializar tableros lógicos
-        machineLogical.randomizeShips();
+       // machineLogical.randomizeShips();
+        //playerNickname= "Almirant Player";
 
         // 2. Inicializar el Visualizador (Dibuja la grilla y el cuadrado de selección)
         // Le pasamos el 'shipLayer' que es el Pane transparente encima del Grid
@@ -83,17 +88,9 @@ public class GameController {
         initDraggableFleet();
 
         // --- AGREGA ESTO PARA LA MIRA ---
-        // 1. Crear el cuadrado
-        targetHighlight = new Rectangle(CELL, CELL); // Tamaño 50x50
-        targetHighlight.setFill(Color.rgb(255, 165, 0, 0.3)); // Naranja transparente
-        targetHighlight.setStroke(Color.ORANGE);
-        targetHighlight.setStrokeWidth(2);
-        targetHighlight.setVisible(false); // Oculto al principio
-        targetHighlight.setMouseTransparent(true); // ¡Vital! Para que no bloquee tus clics
-
-        // 2. Agregarlo al tablero de la máquina
-        machineBoard.getChildren().add(targetHighlight);
-
+        addTargetHighlight();
+        // para guardar num sunk ships.
+        numSunkShips= 0;
         // 5. Configurar botones
         btnStart.setDisable(true);
         btnStart.setOnAction(e -> startBattlePhase());
@@ -107,6 +104,19 @@ public class GameController {
         btnRotate.setOnAction(e -> onRotateClick()); // Vincula la acción (o hazlo en el FXML)
     }
 
+    public void addTargetHighlight() {
+        // 1. Crear el cuadrado
+        targetHighlight = new Rectangle(CELL, CELL); // Tamaño 50x50
+        targetHighlight.setFill(Color.rgb(255, 165, 0, 0.3)); // Naranja transparente
+        targetHighlight.setStroke(Color.ORANGE);
+        targetHighlight.setStrokeWidth(2);
+        targetHighlight.setVisible(false); // Oculto al principio
+        targetHighlight.setMouseTransparent(true); // ¡Vital! Para que no bloquee tus clics
+
+        // 2. Agregarlo al tablero de la máquina
+        machineBoard.getChildren().add(targetHighlight);
+
+    }
     // =====================================================================
     // LÓGICA DE ROTACIÓN
     // =====================================================================
@@ -337,6 +347,7 @@ public class GameController {
                     revealLayer.getChildren().add(canvas); // Añadir a la capa de revelación
 
                     drawnShips.add(ship);
+                    autoSave();
                 }
             }
         }
@@ -372,7 +383,7 @@ public class GameController {
 
         btnStart.setText("¡EN COMBATE!");
         btnStart.setStyle("-fx-background-color: #FF4444; -fx-text-fill: white;");
-
+        autoSave();
         enableMachineShotEvents(true);
         System.out.println("⚔ ¡Comienza la batalla!");
     }
@@ -416,7 +427,7 @@ public class GameController {
 
             ShotResult result = machineLogical.shoot(row, col);
             if (result == null) return;
-
+            autoSave();
             if (result == ShotResult.SUNK) {
                 Ship sunkShip = machineLogical.peek(row, col).getShip();
 
@@ -437,6 +448,7 @@ public class GameController {
             if (machineLogical.isGameOver()) {
                 System.out.println("¡VICTORIA! Has ganado.");
                 handleGameOver(true);
+                autoSave();
                 return;
             }
 
@@ -446,33 +458,39 @@ public class GameController {
             } else {
                 System.out.println("¡Impacto! Sigues disparando.");
             }
-        });
+        });   autoSave();
     }
 
     private void playMachineTurn() {
-        // IA Dispara
+
         int[] aiShot = ai.shoot(playerLogical);
         int r = aiShot[0];
         int c = aiShot[1];
 
         ShotResult machineResult = playerLogical.shoot(r, c);
+
+        // 🔴 PROTECCIÓN CONTRA NULL
+        if (machineResult == null) {
+            playMachineTurn();
+            return;
+        }
+        autoSave();
         if (machineResult == ShotResult.SUNK) {
             Ship sunkShip = playerLogical.peek(r, c).getShip();
-            // Creamos un método especial para quemar el barco en la capa visual
             markPlayerShipAsSunk(sunkShip);
+            numSunkShips++;
         } else {
-            // Pintamos el HIT o MISS sobre la capa de barcos
             paintOnPane(shipLayer, r, c, machineResult);
         }
 
         if (playerLogical.isGameOver()) {
-            System.out.println("DERROTA. La máquina ganó.");
             handleGameOver(false);
         } else if (machineResult != ShotResult.MISS) {
-            // Si la IA acierta, vuelve a disparar (Recursivo simple)
+            // La IA vuelve a disparar si acierta
             playMachineTurn();
         }
     }
+
 
     // =====================================================================
     // HUNDIR BARCO DEL JUGADOR (FANTASMA + FUEGO)
@@ -685,5 +703,74 @@ public class GameController {
         }
 
         alert.show(); // Usamos show() en lugar de showAndWait() para no congelar la UI
+    }
+
+    public void setPlayerNickname(String playerNickname) {
+        this.playerNickname = playerNickname;
+    }
+
+    private void autoSave() {
+        SaveManager.saveBoard(playerLogical, "player_board.ser");
+        SaveManager.saveBoard(machineLogical, "machine_board.ser");
+        SaveManager.savePlayerInfo(playerNickname, numSunkShips,placementPhase);
+    }
+    public void setPlacementPhase(boolean placementPhase){
+        this.placementPhase= placementPhase;
+    }
+
+    public void loadGame(Board player,
+                         Board machine,
+                         PlayerData data) {
+
+        this.playerLogical = player;
+        this.machineLogical = machine;
+        this.playerNickname = data.getNickname();
+        this.numSunkShips = data.getSunkShips();
+        this.placementPhase = data.isPlacementPhase();
+
+        if (placementPhase) {
+            initDraggableFleet();
+            shipLayer.setMouseTransparent(false);
+            fleetPanel.setDisable(false);
+            btnStart.setDisable(!playerLogical.isFleetComplete());
+        } else {
+            shipLayer.setMouseTransparent(true);
+            fleetPanel.setDisable(true);
+            btnStart.setDisable(true);
+            enableMachineShotEvents(true);
+        }
+
+        redrawBoards();
+    }
+
+
+    private void redrawBoards() {
+        playerBoard.getChildren().clear();
+        machineBoard.getChildren().clear();
+        drawPlayerBoardFromModel();
+        drawMachineBoardRealShips();
+    }
+    public void startNewGame(Board player,
+                             Board machine,
+                             String nickname,
+                             int sunkShips) {
+
+        this.playerLogical = player;
+        this.machineLogical = machine;
+        this.playerNickname = nickname;
+        this.numSunkShips = sunkShips;
+
+        placementPhase = true; // importante
+
+        initDraggableFleet();  // mostrar barcos
+        redrawBoards();
+
+    }
+    //por si se cierra la ventana por si acaso
+    public void attachCloseHandler(Stage stage) {
+        stage.setOnCloseRequest(e -> {
+            autoSave();
+            System.out.println("💾 Juego guardado al cerrar.");
+        });
     }
 }

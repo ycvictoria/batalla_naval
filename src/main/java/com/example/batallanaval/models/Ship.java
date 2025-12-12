@@ -1,5 +1,10 @@
 package com.example.batallanaval.models;
-public class Ship {
+
+import java.io.Serializable;
+
+public class  Ship implements Serializable {
+    //para serializar
+    private static final long serialVersionUID = 1L;
 
     private final int length;
     private int hits = 0;

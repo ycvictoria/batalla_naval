@@ -1,25 +1,31 @@
 package com.example.batallanaval.models;
 
-import com.example.batallanaval.models.Ship;
-import com.example.batallanaval.models.ShotResult;
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
 
-import java.util.*;
+public class Board implements Serializable {
 
-public class Board {
+    private static final long serialVersionUID = 1L;
 
-    private final int SIZE = 10;
+    private static final int SIZE = 10;
+
     private final Cell[][] grid = new Cell[SIZE][SIZE];
-
     private final List<Ship> fleet = new ArrayList<>();
 
+    // ==========================================================
+    // CONSTRUCTOR
+    // ==========================================================
     public Board() {
-        for (int r = 0; r < SIZE; r++)
-            for (int c = 0; c < SIZE; c++)
+        for (int r = 0; r < SIZE; r++) {
+            for (int c = 0; c < SIZE; c++) {
                 grid[r][c] = new Cell();
+            }
+        }
     }
 
     // ==========================================================
-    // BASIC GETTERS
+    // GETTERS
     // ==========================================================
     public int getSize() {
         return SIZE;
@@ -29,28 +35,32 @@ public class Board {
         return grid[row][col];
     }
 
+    public int getFleetSize() {
+        return fleet.size();
+    }
+
     public boolean isFleetComplete() {
         return fleet.size() == 10;
     }
 
     // ==========================================================
-    // SHIP PLACEMENT
+    // COLOCACIÓN DE BARCOS
     // ==========================================================
-    public boolean canPlaceShip(Ship ship, int row, int col, boolean horiz) {
+    public boolean canPlaceShip(Ship ship, int row, int col, boolean horizontal) {
 
         int length = ship.getLength();
 
-        // Boundaries
-        if (horiz) {
+        // Límites
+        if (horizontal) {
             if (col + length > SIZE) return false;
         } else {
             if (row + length > SIZE) return false;
         }
 
-        // Check collisions
+        // Colisiones
         for (int i = 0; i < length; i++) {
-            int r = row + (horiz ? 0 : i);
-            int c = col + (horiz ? i : 0);
+            int r = row + (horizontal ? 0 : i);
+            int c = col + (horizontal ? i : 0);
 
             if (grid[r][c].hasShip()) return false;
         }
@@ -58,79 +68,71 @@ public class Board {
         return true;
     }
 
-    public void placeShip(Ship ship, int row, int col, boolean horiz) {
+    public void placeShip(Ship ship, int row, int col, boolean horizontal) {
 
         int length = ship.getLength();
 
         for (int i = 0; i < length; i++) {
-            int r = row + (horiz ? 0 : i);
-            int c = col + (horiz ? i : 0);
+            int r = row + (horizontal ? 0 : i);
+            int c = col + (horizontal ? i : 0);
 
-            grid[r][c].ship = ship;
+            grid[r][c].placeShip(ship);
         }
 
         ship.setPlaced(true);
         fleet.add(ship);
     }
 
-    // Elimina un barco específico del tablero (Lógico)
     public void removeShip(Ship ship) {
         for (int r = 0; r < SIZE; r++) {
             for (int c = 0; c < SIZE; c++) {
                 if (grid[r][c].getShip() == ship) {
-                    grid[r][c] = new Cell(); // Dejamos la celda vacía
+                    grid[r][c] = new Cell();
                 }
             }
         }
-        fleet.remove(ship); // Lo sacamos de la lista de flota
+        fleet.remove(ship);
     }
 
     // ==========================================================
-    // SHOOTING LOGIC
+    // DISPAROS
     // ==========================================================
     public ShotResult shoot(int row, int col) {
 
         Cell cell = grid[row][col];
 
-        // Already shot here?
-        if (cell.shot) return null;
+        if (cell.isShot()) return null;
 
-        cell.shot = true;
+        cell.markShot();
 
         if (!cell.hasShip()) {
             return ShotResult.MISS;
         }
 
-        Ship ship = cell.ship;
+        Ship ship = cell.getShip();
         ship.registerHit();
 
-        if (ship.isSunk()) {
-            return ShotResult.SUNK;
-        }
-
-        return ShotResult.HIT;
+        return ship.isSunk() ? ShotResult.SUNK : ShotResult.HIT;
     }
 
     // ==========================================================
-    // RANDOM FLEET GENERATION
+    // FLOTA ALEATORIA
     // ==========================================================
     public void randomizeShips() {
 
-        int[] lengths = {4, 3, 3, 2, 2, 2, 1, 1, 1, 1}; // típica flota
+        int[] lengths = {4, 3, 3, 2, 2, 2, 1, 1, 1, 1};
 
         for (int len : lengths) {
-
-            Ship s = new Ship(len);
+            Ship ship = new Ship(len);
             boolean placed = false;
 
             while (!placed) {
+                int row = (int) (Math.random() * SIZE);
+                int col = (int) (Math.random() * SIZE);
+                boolean horizontal = Math.random() < 0.5;
 
-                int row = (int)(Math.random() * SIZE);
-                int col = (int)(Math.random() * SIZE);
-                boolean horiz = Math.random() < 0.5;
-
-                if (canPlaceShip(s, row, col, horiz)) {
-                    placeShip(s, row, col, horiz);
+                if (canPlaceShip(ship, row, col, horizontal)) {
+                    placeShip(ship, row, col, horizontal);
                     placed = true;
                 }
             }
@@ -138,31 +140,8 @@ public class Board {
     }
 
     // ==========================================================
-    // INTERNAL CELL CLASS
+    // ESTADO DEL JUEGO
     // ==========================================================
-    public static class Cell {
-        private boolean shot = false;
-        private Ship ship = null;
-
-        public boolean hasShip() {
-            return ship != null;
-        }
-
-        public Ship getShip() {
-            return ship;
-        }
-
-        public boolean isShot() {
-            return shot;
-        }
-    }
-
-    // ==========================================================
-    // GAME OVER CHECK
-    // ==========================================================
-
-    // Verifica si todos los barcos de la flota han sido hundidos.
-
     public boolean isGameOver() {
         return !fleet.isEmpty() &&
                 fleet.stream().allMatch(Ship::isSunk);
@@ -171,11 +150,9 @@ public class Board {
     public void clear() {
         for (int r = 0; r < SIZE; r++) {
             for (int c = 0; c < SIZE; c++) {
-                grid[r][c] = new Cell(); // Reinicia la celda
+                grid[r][c] = new Cell();
             }
         }
-        fleet.clear(); // Borra la lista de barcos
+        fleet.clear();
     }
 }
-
-

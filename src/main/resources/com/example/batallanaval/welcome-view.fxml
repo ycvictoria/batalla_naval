@@ -1,16 +1,77 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import javafx.geometry.Insets?>
-<?import javafx.scene.control.Label?>
-<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
 
-<?import javafx.scene.control.Button?>
-<VBox alignment="CENTER" spacing="20.0" xmlns:fx="http://javafx.com/fxml"
-      fx:controller="com.example.batallanaval.controllers.WelcomeController">
-    <padding>
-        <Insets bottom="20.0" left="20.0" right="20.0" top="20.0"/>
-    </padding>
+<StackPane xmlns="http://javafx.com/javafx/17"
+           xmlns:fx="http://javafx.com/fxml"
+           fx:controller="com.example.batallanaval.controllers.WelcomeController"
+           style="-fx-background-color: radial-gradient(radius 100%, #1e3a8a, #020617);">
 
-    <Label fx:id="welcomeText"/>
-    <Button text="Hello!" onAction="#onHelloButtonClick"/>
-</VBox>
+    <VBox alignment="CENTER" spacing="18">
+
+        <Label text="BATALLA NAVAL"
+               style="-fx-font-family: 'Courier New';
+                      -fx-font-size: 36px;
+                      -fx-text-fill: #e0f2fe;
+                      -fx-font-weight: bold;
+                      -fx-effect: dropshadow(gaussian, #38bdf8, 10, 0.4, 0, 0);" />
+
+        <!-- CONTINUAR -->
+        <Button fx:id="btnContinue"
+                text="▶ CONTINUAR JUEGO"
+                prefWidth="260"
+                style="-fx-font-family: 'Courier New';
+                       -fx-font-size: 16px;
+                       -fx-background-color: transparent;
+                       -fx-text-fill: #38bdf8;
+                       -fx-border-color: #38bdf8;" />
+
+        <!-- NUEVO JUEGO -->
+        <Button fx:id="btnNew"
+                text="🆕 NUEVO JUEGO"
+                prefWidth="260"
+                style="-fx-font-family: 'Courier New';
+                       -fx-font-size: 16px;
+                       -fx-background-color: transparent;
+                       -fx-text-fill: #a7f3d0;
+                       -fx-border-color: #a7f3d0;" />
+
+        <!-- SECCIÓN NUEVO JUEGO (OCULTA) -->
+        <HBox fx:id="newGameBox"
+              spacing="10"
+              alignment="CENTER"
+              visible="false"
+              managed="false">
+
+            <TextField fx:id="nameField"
+                       promptText="Nombre del jugador"
+                       prefWidth="180"
+                       style="-fx-font-family: 'Courier New';
+                              -fx-font-size: 14px;
+                              -fx-background-color: #020617;
+                              -fx-text-fill: #e0f2fe;
+                              -fx-border-color: #a7f3d0;" />
+
+            <Button fx:id="btnAccept"
+                    text="✔"
+                    prefWidth="50"
+                    style="-fx-font-family: 'Courier New';
+                           -fx-font-size: 14px;
+                           -fx-background-color: #020617;
+                           -fx-text-fill: #a7f3d0;
+                           -fx-border-color: #a7f3d0;" />
+        </HBox>
+
+        <!-- SALIR -->
+        <Button fx:id="btnExit"
+                text="⏹ SALIR"
+                prefWidth="260"
+                style="-fx-font-family: 'Courier New';
+                       -fx-font-size: 16px;
+                       -fx-background-color: transparent;
+                       -fx-text-fill: #fecaca;
+                       -fx-border-color: #fecaca;" />
+
+    </VBox>
+</StackPane>
