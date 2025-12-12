@@ -86,5 +86,12 @@ public class BoardVisualizer {
         targetHighlight.setVisible(false);
     }
 
+    public void recreateHighlight() {
+        if (!shipsPane.getChildren().contains(selectionHighlight)) {
+            shipsPane.getChildren().add(selectionHighlight);
+            selectionHighlight.toBack(); // Para que no tape nada importante
+        }
+    }
+
     public Rectangle getSelectionHighlight() { return selectionHighlight; }
 }
