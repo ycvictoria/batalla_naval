@@ -28,6 +28,8 @@ public class GameController {
     @FXML private VBox submarineContainer;
     @FXML private VBox destroyerContainer;
     @FXML private VBox frigateContainer;
+    @FXML private Label lblPlayerShips;
+    @FXML private Label lblMachineShips;
 
     @FXML private StackPane playerArea;
     @FXML private Pane shipLayer;
@@ -93,6 +95,9 @@ public class GameController {
         addTargetHighlight();
         // para guardar num sunk ships.
         numSunkShips= 0;
+
+        updateStatsLabels();
+
         // 5. Configurar botones
         btnStart.setDisable(true);
         btnStart.setOnAction(e -> startBattlePhase());
@@ -369,6 +374,47 @@ public class GameController {
         }
     }
 
+    private int countRemainingShips(Board board) {
+        java.util.Set<Ship> uniqueShips = new java.util.HashSet<>();
+        int unsunkCount = 0;
+        int size = board.getSize();
+
+        // 1. Recoger todos los objetos Ship únicos en el tablero
+        for (int r = 0; r < size; r++) {
+            for (int c = 0; c < size; c++) {
+                Cell cell = board.peek(r, c);
+                // Asumiendo que Cell tiene un método hasShip()
+                if (cell != null && cell.hasShip()) {
+                    uniqueShips.add(cell.getShip());
+                }
+            }
+        }
+
+        // 2. Contar cuántos de esos barcos NO están hundidos
+        for (Ship ship : uniqueShips) {
+            // Asumiendo que Ship tiene un método isSunk()
+            if (!ship.isSunk()) {
+                unsunkCount++;
+            }
+        }
+        return unsunkCount;
+    }
+
+    /**
+     * Actualiza los Labels de estadísticas con el conteo actual.
+     */
+    private void updateStatsLabels() {
+        int playerRemaining = countRemainingShips(playerLogical);
+        int machineRemaining = countRemainingShips(machineLogical);
+
+        if (lblPlayerShips != null) {
+            lblPlayerShips.setText("Barcos restantes (Tú): " + playerRemaining);
+        }
+        if (lblMachineShips != null) {
+            lblMachineShips.setText("Barcos restantes (IA): " + machineRemaining);
+        }
+    }
+
     // =====================================================================
     // FASE DE BATALLA (DISPAROS)
     // =====================================================================
@@ -396,6 +442,7 @@ public class GameController {
         btnStart.setStyle("-fx-background-color: #FF4444; -fx-text-fill: white;");
         autoSave();
         enableMachineShotEvents(true);
+        updateStatsLabels();
         System.out.println("⚔ ¡Comienza la batalla!");
     }
 
@@ -448,6 +495,8 @@ public class GameController {
                 // 2. DIBUJAR EL FUEGO (En la capa superior 'enemyLayer')
                 // Cambiamos 'machineBoard' por 'enemyLayer'
                 markShipAsSunk(enemyLayer, machineLogical, sunkShip);
+
+                updateStatsLabels();
 
                 System.out.println("¡HUNDIDO! Barco destruido.");
             } else {
@@ -671,6 +720,7 @@ public class GameController {
 
         SaveManager.deleteSaves();
         alert.show();
+        updateStatsLabels();
     }
 
     public void setPlayerNickname(String playerNickname) {
@@ -755,6 +805,8 @@ public class GameController {
             // 6. ACTIVAR DISPAROS
             enableMachineShotEvents(true);
         }
+
+        updateStatsLabels();
     }
 
 
