@@ -81,6 +81,7 @@ public class ShipPlacementManager {
                     board.placeShip(tempShip, row, col, isHorizontal);
                     // Colocamos visualmente y pasamos la referencia del barco
                     placeVisualShip(col, row, size, tempShip);
+                    controller.consumeShip(size);
                     controller.checkFleetComplete();
                     success = true;
                 }
@@ -185,7 +186,7 @@ public class ShipPlacementManager {
 
             // 3. Quitar el barco de la lógica del tablero (para liberar las celdas)
             controller.getPlayerLogical().removeShip(shipRef);
-
+            controller.restoreShip(size);
             // 4. SOLUCIÓN MAESTRA: Usar Platform.runLater
             // Esto espera un "pulso" a que el arrastre inicie bien antes de hacer el barco intangible.
             // Así el tablero de abajo podrá detectar el mouse y mostrar el cuadro verde.

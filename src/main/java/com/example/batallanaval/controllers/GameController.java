@@ -16,6 +16,8 @@ import javafx.scene.shape.Rectangle;
 import javafx.stage.Stage;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 public class GameController {
 
@@ -30,8 +32,8 @@ public class GameController {
     @FXML private Label lblMachineShips;
     @FXML private VBox placementBox;
     @FXML private VBox playerHealthBox;
-    @FXML private VBox machineHealthBox;
-    @FXML private VBox machineVBoxStats;
+   // @FXML private VBox machineHealthBox;
+
 
     @FXML private StackPane playerArea;
     @FXML private Pane shipLayer;
@@ -69,6 +71,11 @@ public class GameController {
     private CanvasMarkerRenderer markerRenderer;
     private Rectangle targetHighlight;
 
+    private final Map<Integer, Integer> availableShips = new HashMap<>();
+    @FXML private Label lblCarrier;
+    @FXML private Label lblSubmarine;
+    @FXML private Label lblDestroyer;
+    @FXML private Label lblFrigate;
     // =====================================================================
     // INITIALIZATION
     // =====================================================================
@@ -79,8 +86,7 @@ public class GameController {
         // Le pasamos el 'shipLayer' que es el Pane transparente encima del Grid
         boardVisualizer = new BoardVisualizer(shipLayer, CELL);
         //Para que no aparezca el panel del status barco machina.
-        machineVBoxStats.setVisible(false);
-        machineVBoxStats.setManaged(false);
+
 
         if (enemyLayer != null) {
             boardVisualizer.drawGrid(enemyLayer); // Dibuja líneas en el enemigo
@@ -95,7 +101,9 @@ public class GameController {
         placementManager = new ShipPlacementManager(this, boardVisualizer, shipLayer, CELL);
 
         // 4. Crear la flota en el panel lateral (Canvas bonitos)
+        initAvailableShips(); //cantidad de barcos disponibles
         initDraggableFleet();
+        updateFleetLabels();
 
         // --- AGREGA ESTO PARA LA MIRA ---
         addTargetHighlight();
@@ -174,7 +182,7 @@ public class GameController {
     // =====================================================================
     // CREACIÓN DE FLOTA ARRASTRABLE (NUEVO MÉTODO)
     // =====================================================================
-    private void initDraggableFleet() {
+    /**private void initDraggableFleet() {
         //fleetPanel.getChildren().clear(); // Limpiar por si acaso
         if (carrierContainer != null) carrierContainer.getChildren().clear();
         if (submarineContainer != null) submarineContainer.getChildren().clear();
@@ -198,6 +206,33 @@ public class GameController {
         createShipInPanel(1, frigateContainer);
         createShipInPanel(1, frigateContainer);
         createShipInPanel(1, frigateContainer);
+    }**/
+    private void initDraggableFleet() {
+
+        if (carrierContainer != null) carrierContainer.getChildren().clear();
+        if (submarineContainer != null) submarineContainer.getChildren().clear();
+        if (destroyerContainer != null) destroyerContainer.getChildren().clear();
+        if (frigateContainer != null) frigateContainer.getChildren().clear();
+
+        // 1 Portaaviones (size 4)
+        if (availableShips.get(4) > 0) {
+            createShipInPanel(4, carrierContainer);
+        }
+
+        // 2 Submarinos (size 3)
+        for (int i = 0; i < availableShips.get(3); i++) {
+            createShipInPanel(3, submarineContainer);
+        }
+
+        // 3 Destructores (size 2)
+        for (int i = 0; i < availableShips.get(2); i++) {
+            createShipInPanel(2, destroyerContainer);
+        }
+
+        // 4 Fragatas (size 1)
+        for (int i = 0; i < availableShips.get(1); i++) {
+            createShipInPanel(1, frigateContainer);
+        }
     }
 
     private void createShipInPanel(int size, Pane targetPane) {
@@ -435,8 +470,7 @@ public class GameController {
         //oculta el panel de placement con nombres barco, muestra el panel coon las estadisticas de la vida de los  barcos
         placementBox.setVisible(false);
         placementBox.setManaged(false); // 🔑 CLAVE
-        machineVBoxStats.setVisible(true);
-        machineVBoxStats.setManaged(true);
+
         updateHealthSquares();
         // 1. Deshabilitar botones de edición
         btnRotate.setDisable(true);
@@ -1005,7 +1039,7 @@ public class GameController {
 
     private void updateHealthSquares() {
         drawShipSquares(playerLogical, playerHealthBox);
-        drawShipSquares(machineLogical, machineHealthBox);
+        //drawShipSquares(machineLogical, machineHealthBox);
     }
 
     private void drawShipSquares(Board board, VBox container) {
@@ -1017,7 +1051,7 @@ public class GameController {
             HBox row = new HBox(8);
             row.setAlignment(Pos.CENTER_LEFT);
 
-            Label name = new Label(getShipName(ship.getSize()) + " " + index);
+            Label name = new Label(getShipName(ship.getSize()) + " " );
             name.setMinWidth(140);
 
             HBox squares = new HBox(4);
@@ -1053,5 +1087,25 @@ public class GameController {
             case 1 -> "⛵ Fragata";
             default -> "Barco";
         };
+    }
+    private void initAvailableShips() {
+        availableShips.put(4, 1); // Portaaviones
+        availableShips.put(3, 2); // Submarinos
+        availableShips.put(2, 3); // Destructores
+        availableShips.put(1, 4); // Fragatas
+    }
+    private void updateFleetLabels() {
+        lblCarrier.setText("1 x 🛳 Portaaviones (" + availableShips.get(4) + ")");
+        lblSubmarine.setText("2 x 🚤 Submarinos (" + availableShips.get(3) + ")");
+        lblDestroyer.setText("3 x 🛥 Destructores (" + availableShips.get(2) + ")");
+        lblFrigate.setText("4 x ⛵ Fragatas (" + availableShips.get(1) + ")");
+    }
+    public void restoreShip(int size) {
+        availableShips.put(size, availableShips.get(size) + 1);
+        updateFleetLabels();
+    }
+    public void consumeShip(int size) {
+        availableShips.put(size, availableShips.get(size) - 1);
+        updateFleetLabels();
     }
 }
