@@ -2,6 +2,7 @@ module com.example.batallanaval {
     requires javafx.controls;
     requires javafx.fxml;
     requires java.desktop;
+    requires javafx.graphics;
 
 
     opens com.example.batallanaval.controllers to javafx.fxml;

@@ -155,4 +155,8 @@ public class Board implements Serializable {
         }
         fleet.clear();
     }
+
+    public ArrayList< Ship> getFleet() {
+        return (ArrayList<Ship>) fleet;
+    }
 }
