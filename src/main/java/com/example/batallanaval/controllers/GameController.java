@@ -944,27 +944,19 @@ public class GameController {
      */
     @FXML
     private void onBackToMenu() throws IOException {
-        // 1. Crear la alerta de confirmación
         javafx.scene.control.Alert alert = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.CONFIRMATION);
         alert.setTitle("Volver al Menú");
         alert.setHeaderText("¿Estás seguro de que deseas salir?");
         alert.setContentText("No te preocupes, los datos de la partida se guardarán automáticamente.");
-
-        // 2. Mostrar la alerta y esperar a que el usuario decida
         java.util.Optional<javafx.scene.control.ButtonType> result = alert.showAndWait();
-
-        // 3. Solo si presiona "Aceptar" (OK), ejecutamos la salida
         if (result.isPresent() && result.get() == javafx.scene.control.ButtonType.OK) {
-
             // Guardamos antes de salir (si el juego no ha terminado)
             if (!isGameFinished) {
                 autoSave();
             }
-
             // Cerramos la ventana actual
             Stage stage = (Stage) btnStart.getScene().getWindow();
             stage.close();
-
             // Abrimos el menú principal
             new com.example.batallanaval.views.WelcomeView().show();
         }

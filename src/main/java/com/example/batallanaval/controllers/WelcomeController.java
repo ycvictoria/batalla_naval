@@ -13,105 +13,88 @@ import javafx.stage.Stage;
 import javafx.scene.layout.StackPane;
 import javafx.scene.image.ImageView;
 
+/**
+ * Controlador para la pantalla de bienvenida (menú principal).
+ * Gestiona la carga de partidas, el inicio de nuevos juegos, la validación del nombre
+ * del jugador y la muestra de instrucciones.
+ */
 public class WelcomeController {
-
-    // ======================
-    // FXML
-    // ======================
 
     @FXML private StackPane rootStack;
     @FXML private ImageView backgroundView;
-
     @FXML private Button btnContinue;
     @FXML private Button btnNew;
     @FXML private Button btnExit;
     @FXML private Button buttonHelp;
-
     @FXML private HBox newGameBox;
     @FXML private TextField nameField;
     @FXML private Button btnAccept;
 
-    // ======================
-    // INIT
-    // ======================
+    /**
+     * Inicializa el controlador después de que los elementos FXML han sido cargados.
+     * Configura el fondo, verifica la existencia de partidas guardadas y establece
+     * los manejadores de eventos para los botones y campos de texto.
+     */
     @FXML
     public void initialize() {
-
-        // --- 1. LÓGICA DE FONDO RESPONSIVE (EL ARREGLO MÁGICO) ---
+        // para que la imageView se ajuste al tamaño del StackPane.
         if (rootStack != null && backgroundView != null) {
-            // Esto "ata" el ancho/alto de la imagen al de la ventana
             backgroundView.fitWidthProperty().bind(rootStack.widthProperty());
             backgroundView.fitHeightProperty().bind(rootStack.heightProperty());
         }
-
-        // VERIFICAR SI HAY PARTIDA GUARDADA
-        // Si no existe el archivo, deshabilitamos el botón de Continuar
+        // Verifica si hay partida guardada, si no existe el archivo, deshabilitamos el botón de Continuar
         if (SaveManager.loadPlayerInfo() == null) {
             btnContinue.setDisable(true);
         }
-
         // Ocultar sección de nuevo juego al inicio
         newGameBox.setVisible(false);
         newGameBox.setManaged(false);
-
+        // Listener para limpiar la clase CSS de error cuando el usuario comienza a escribir
         nameField.textProperty().addListener((observable, oldValue, newValue) -> {
             nameField.getStyleClass().remove("error");
         });
 
-        // NUEVO JUEGO → mostrar campo nombre
+        // Manejo de evento cuando se presiona nuevo juego → mostrar campo nombre
         btnNew.setOnAction(e -> {
             newGameBox.setVisible(true);
             newGameBox.setManaged(true);
             nameField.requestFocus();
         });
 
-        // ACEPTAR (botón o ENTER)
         btnAccept.setOnAction(e -> startNewGame());
         nameField.setOnAction(e -> startNewGame());
-
-        // CONTINUAR
         btnContinue.setOnAction(e -> continueGame());
-
-        // SALIR
         btnExit.setOnAction(e -> {
             Stage stage = (Stage) btnExit.getScene().getWindow();
             stage.close();
         });
     }
 
-    // ======================
-    // NUEVO JUEGO (CON VALIDACIÓN)
-    // ======================
+    /**
+     * Inicia un nuevo juego después de validar el nickname del jugador.
+     * Crea tableros nuevos, coloca los barcos de la máquina aleatoriamente
+     * y guarda el estado inicial del juego.
+     */
     private void startNewGame() {
         String nickname = nameField.getText().trim();
-
-        // --- VALIDACIÓN: Mínimo 3 caracteres ---
         if (nickname.length() < 3) {
-            // 1. Poner borde rojo al campo de texto
+            // Poner borde rojo al campo de texto si hay error.
             if (!nameField.getStyleClass().contains("error")) {
                 nameField.getStyleClass().add("error");
             }
-
-            // 2. Mostrar alerta pequeña
             javafx.scene.control.Alert alert = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.WARNING);
             alert.setTitle("Nombre muy corto");
             alert.setHeaderText(null);
             alert.setContentText("Por favor, ingresa un nombre de al menos 3 caracteres.");
             alert.show();
-
-            // 3. ¡IMPORTANTE! Return para que NO inicie el juego
             return;
         }
 
-        // Si pasa la validación, quitamos el estilo de error (por si acaso)
-        nameField.setStyle(null);
-
-        // --- LÓGICA DE CREACIÓN DEL JUEGO ---
         Board playerBoard = new Board();
         Board machineBoard = new Board();
-        machineBoard.randomizeShips();
+        machineBoard.randomizeShips(); // Colocación aleatoria para la IA
 
-        // Guardado inicial
+        // Guardado inicial de los tableros y la información de la IA
         SaveManager.saveBoard(playerBoard, "player_board.ser");
         SaveManager.saveBoard(machineBoard, "machine_board.ser");
         SaveManager.savePlayerInfo(nickname, 0, true);
@@ -120,20 +103,19 @@ public class WelcomeController {
         openGame(playerBoard, machineBoard, data);
     }
 
-    // ======================
-    // CONTINUAR JUEGO
-    // ======================
+    /**
+     * Carga el estado de la partida guardada desde los archivos de persistencia
+     * y abre la vista del juego con el estado recuperado.
+     */
     private void continueGame() {
-
         Board player = SaveManager.loadBoard("player_board.ser");
         Board machine = SaveManager.loadBoard("machine_board.ser");
         PlayerData data = SaveManager.loadPlayerInfo();
-
+        // Verificación de integridad de los archivos guardados
         if (player == null || machine == null || data == null) {
             System.out.println("❌ No hay partida guardada.");
             return;
         }
-
         openGame(
                 player,
                 machine,
@@ -141,42 +123,47 @@ public class WelcomeController {
         );
     }
 
-    // ======================
-    // ABRIR JUEGO
-    // ======================
+    /**
+     * Abre la ventana principal del juego (GameView) y carga el estado
+     * del juego proporcionado. Cierra la ventana de bienvenida.
+     * @param player El tablero lógico del jugador humano.
+     * @param machine El tablero lógico de la máquina.
+     * @param data Los datos del jugador (nickname, puntaje, fase actual).
+     */
     private void openGame(Board player,
                           Board machine,
                        PlayerData data) {
-
         try {
             GameView gameView = new GameView();
             GameController controller = gameView.getGameController();
-
             // 🔹 Cargar estado
             controller.loadGame(player, machine, data);
             controller.setPlacementPhase(data.isPlacementPhase());
-
             // 🔹 Guardar al cerrar
             controller.attachCloseHandler(gameView);
-
             // 🔹 Mostrar juego
             gameView.show();
-
             // 🔹 Cerrar Welcome
             Stage welcomeStage = (Stage) btnNew.getScene().getWindow();
             welcomeStage.close();
 
         } catch (Exception e) {
+            System.err.println("Error al intentar abrir la ventana del juego.");
             e.printStackTrace();
         }
     }
+
+    /**
+     * Manejador de evento para el botón de Ayuda. Llama a la función para mostrar
+     * el diálogo de instrucciones.
+     */
     @FXML
     private void onHelpButtonClick() {
         showInstructionsDialog();
     }
 
     /**
-     * Muestra un diálogo modal con las instrucciones del juego.
+     * Muestra una alerta con las instrucciones del juego.
      */
     private void showInstructionsDialog() {
         Alert alert = new javafx.scene.control.Alert(Alert.AlertType.INFORMATION);
