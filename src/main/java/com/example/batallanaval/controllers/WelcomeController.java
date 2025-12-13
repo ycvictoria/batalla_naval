@@ -38,6 +38,10 @@ public class WelcomeController {
         newGameBox.setVisible(false);
         newGameBox.setManaged(false);
 
+        nameField.textProperty().addListener((observable, oldValue, newValue) -> {
+            nameField.getStyleClass().remove("error");
+        });
+
         // NUEVO JUEGO → mostrar campo nombre
         btnNew.setOnAction(e -> {
             newGameBox.setVisible(true);
@@ -60,26 +64,43 @@ public class WelcomeController {
     }
 
     // ======================
-    // NUEVO JUEGO
+    // NUEVO JUEGO (CON VALIDACIÓN)
     // ======================
     private void startNewGame() {
-
         String nickname = nameField.getText().trim();
-        if (nickname.isEmpty()) {
-            nickname = "Jugador";
+
+        // --- VALIDACIÓN: Mínimo 3 caracteres ---
+        if (nickname.length() < 3) {
+            // 1. Poner borde rojo al campo de texto
+            if (!nameField.getStyleClass().contains("error")) {
+                nameField.getStyleClass().add("error");
+            }
+
+            // 2. Mostrar alerta pequeña
+            javafx.scene.control.Alert alert = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.WARNING);
+            alert.setTitle("Nombre muy corto");
+            alert.setHeaderText(null);
+            alert.setContentText("Por favor, ingresa un nombre de al menos 3 caracteres.");
+            alert.show();
+
+            // 3. ¡IMPORTANTE! Return para que NO inicie el juego
+            return;
         }
 
+        // Si pasa la validación, quitamos el estilo de error (por si acaso)
+        nameField.setStyle(null);
+
+        // --- LÓGICA DE CREACIÓN DEL JUEGO ---
         Board playerBoard = new Board();
         Board machineBoard = new Board();
         machineBoard.randomizeShips();
 
-        // 🔹 Guardado inicial
+        // Guardado inicial
         SaveManager.saveBoard(playerBoard, "player_board.ser");
         SaveManager.saveBoard(machineBoard, "machine_board.ser");
-
-        // 🔹 Nuevo juego → 0 hundidos, EN colocación
         SaveManager.savePlayerInfo(nickname, 0, true);
-        PlayerData data = new PlayerData(nickname, 0,true);
+
+        PlayerData data = new PlayerData(nickname, 0, true);
         openGame(playerBoard, machineBoard, data);
     }
 

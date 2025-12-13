@@ -8,6 +8,7 @@ import com.example.batallanaval.views.CanvasShipRenderer;
 import javafx.fxml.FXML;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.control.Button;
+import javafx.scene.control.Label;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.StackPane;
@@ -16,10 +17,13 @@ import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 import javafx.stage.Stage;
 
+import java.io.IOException;
+
 public class GameController {
 
     // ========= FXML ELEMENTS =========
     @FXML private VBox fleetPanel;
+    @FXML private Label lblPlayerName;
     @FXML private VBox carrierContainer;
     @FXML private VBox submarineContainer;
     @FXML private VBox destroyerContainer;
@@ -36,6 +40,7 @@ public class GameController {
 
     @FXML private Button btnRotate;
     @FXML private Button btnReveal;
+    @FXML private Button btnRandom;
     @FXML private Button btnStart;
 
     // ========= GAME LOGIC =========
@@ -368,15 +373,24 @@ public class GameController {
     // FASE DE BATALLA (DISPAROS)
     // =====================================================================
     private void startBattlePhase() {
-        // --- NUEVO: SI ESTABAN REVELADOS, OCÚLTALOS AUTOMÁTICAMENTE ---
         if (isEnemyFleetRevealed) {
-            revealEnemyFleet(); // Esto llama al método de arriba y los borra
+            revealEnemyFleet();
             System.out.println("⚠️ La flota enemiga se ocultó automáticamente para iniciar el juego.");
         }
 
         placementPhase = false;
         shipLayer.setMouseTransparent(true);
-        fleetPanel.setDisable(true);
+
+        // 1. Deshabilitar botones de edición
+        btnRotate.setDisable(true);
+        btnRandom.setDisable(true);
+        btnReveal.setDisable(true); // <--- AGREGAR ESTA LÍNEA (Bloquea el botón de espiar)
+
+        // 2. Deshabilitar los contenedores de barcos
+        carrierContainer.setDisable(true);
+        submarineContainer.setDisable(true);
+        destroyerContainer.setDisable(true);
+        frigateContainer.setDisable(true);
 
         btnStart.setText("¡EN COMBATE!");
         btnStart.setStyle("-fx-background-color: #FF4444; -fx-text-fill: white;");
@@ -638,7 +652,7 @@ public class GameController {
             btnStart.setStyle("-fx-background-color: #2b2b2b; -fx-text-fill: red; -fx-font-weight: bold;");
             btnStart.setDisable(true);
 
-            // Si perdiste, mostramos dónde estaban los barcos enemigos que faltaron
+            // Si pierde, muestra dónde estaban los barcos enemigos que faltaron
             if (!isEnemyFleetRevealed) {
                 revealEnemyFleet();
             }
@@ -656,7 +670,7 @@ public class GameController {
         }
 
         SaveManager.deleteSaves();
-        alert.show(); // Usamos show() en lugar de showAndWait() para no congelar la UI
+        alert.show();
     }
 
     public void setPlayerNickname(String playerNickname) {
@@ -675,34 +689,77 @@ public class GameController {
         this.placementPhase= placementPhase;
     }
 
-    public void loadGame(Board player,
-                         Board machine,
-                         PlayerData data) {
-
+    public void loadGame(Board player, Board machine, PlayerData data) {
         this.playerLogical = player;
         this.machineLogical = machine;
         this.playerNickname = data.getNickname();
         this.numSunkShips = data.getSunkShips();
         this.placementPhase = data.isPlacementPhase();
 
+        // 1. Actualizar nombre
+        lblPlayerName.setText("Almirante " + playerNickname);
+
+        // 2. DIBUJAR TODO PRIMERO (Importante para que existan los objetos gráficos)
+        redrawBoards();
+
+        // 3. CONFIGURAR ESTADO DEL JUEGO
         if (placementPhase) {
             initDraggableFleet();
             shipLayer.setMouseTransparent(false);
-            fleetPanel.setDisable(false);
+
+            // Habilitar controles
+            btnRotate.setDisable(false);
+            btnRandom.setDisable(false);
+            btnReveal.setDisable(false);
+
+            // Habilitar contenedores
+            carrierContainer.setDisable(false);
+            submarineContainer.setDisable(false);
+            destroyerContainer.setDisable(false);
+            frigateContainer.setDisable(false);
+
             btnStart.setDisable(!playerLogical.isFleetComplete());
+            btnStart.setText("🚀 Iniciar Batalla");
+            btnStart.setStyle(""); // Estilo original
+
+            // Desactivar disparos (aún no empieza)
+            enableMachineShotEvents(false);
+
         } else {
+
+            // 1. Limpiar panel izquierdo (ya no hay barcos para poner)
+            carrierContainer.getChildren().clear();
+            submarineContainer.getChildren().clear();
+            destroyerContainer.getChildren().clear();
+            frigateContainer.getChildren().clear();
+
+            // 2. Bloquear interacciones de colocación
             shipLayer.setMouseTransparent(true);
-            fleetPanel.setDisable(true);
+
+            // 3. BLOQUEAR BOTONES (Incluido el de Revelar)
+            btnRotate.setDisable(true);
+            btnRandom.setDisable(true);
+            btnReveal.setDisable(true); // <--- ¡ESTO FALTABA!
+
+            // 4. Bloquear contenedores (estilo visual opaco)
+            carrierContainer.setDisable(true);
+            submarineContainer.setDisable(true);
+            destroyerContainer.setDisable(true);
+            frigateContainer.setDisable(true);
+
+            // 5. Configurar botón de inicio como "En Combate"
             btnStart.setDisable(true);
+            btnStart.setText("¡EN COMBATE!");
+            btnStart.setStyle("-fx-background-color: #FF4444; -fx-text-fill: white;");
+
+            // 6. ACTIVAR DISPAROS
             enableMachineShotEvents(true);
         }
-
-        redrawBoards();
     }
 
 
     // =====================================================================
-    // MÉTODO CORREGIDO: RESTAURAR TODO (INCLUIDO ENEMIGO)
+    // RESTAURA TODO
     // =====================================================================
     private void redrawBoards() {
         // 1. LIMPIEZA PROFUNDA
@@ -786,7 +843,7 @@ public class GameController {
     }
 
     // =====================================================================
-    // NUEVO MÉTODO AUXILIAR PARA LA PERSISTENCIA
+    // MÉTODO AUX PARA PERSISTENCIA
     // Recorre un tablero lógico cargado y vuelve a pintar los disparos visualmente.
     // =====================================================================
     private void restoreShotsVisuals(Board logicalBoard, Pane targetLayer) {
@@ -837,8 +894,10 @@ public class GameController {
         this.playerNickname = nickname;
         this.numSunkShips = sunkShips;
 
-        placementPhase = true; // importante
+        // Actualizar el label
+        lblPlayerName.setText("Almirante " + nickname);
 
+        placementPhase = true; // importante
         initDraggableFleet();  // mostrar barcos
         redrawBoards();
 
@@ -849,5 +908,33 @@ public class GameController {
             autoSave();
             System.out.println("💾 Juego guardado al cerrar.");
         });
+    }
+
+    @FXML
+    private void onBackToMenu() throws IOException {
+        // 1. Crear la alerta de confirmación
+        javafx.scene.control.Alert alert = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.CONFIRMATION);
+        alert.setTitle("Volver al Menú");
+        alert.setHeaderText("¿Estás seguro de que deseas salir?");
+        alert.setContentText("No te preocupes, los datos de la partida se guardarán automáticamente.");
+
+        // 2. Mostrar la alerta y esperar a que el usuario decida
+        java.util.Optional<javafx.scene.control.ButtonType> result = alert.showAndWait();
+
+        // 3. Solo si presiona "Aceptar" (OK), ejecutamos la salida
+        if (result.isPresent() && result.get() == javafx.scene.control.ButtonType.OK) {
+
+            // Guardamos antes de salir (si el juego no ha terminado)
+            if (!isGameFinished) {
+                autoSave();
+            }
+
+            // Cerramos la ventana actual
+            Stage stage = (Stage) btnStart.getScene().getWindow();
+            stage.close();
+
+            // Abrimos el menú principal
+            new com.example.batallanaval.views.WelcomeView().show();
+        }
     }
 }
