@@ -18,11 +18,24 @@ public class WelcomeView extends Stage {
         welcomeController = fxmlLoader.getController();
         Parent root = fxmlLoader.load();
         Scene scene = new Scene(root);
-        this.setScene(scene);
-        this.setMaximized(true);
-        this.setTitle("Batalla Naval - Menú Principal");
-        this.centerOnScreen();
 
+        this.setTitle("Batalla Naval - Menú Principal");
+        this.setScene(scene);
+        // Tamaño mínimo decente
+        this.setMinWidth(1000);
+        this.setMinHeight(700);
+        // Abre la ventana maximizada
+        this.setMaximized(true);
+
+        this.maximizedProperty().addListener((observable, wasMaximized, isNowMaximized) -> {
+            // Si isNowMaximized es false, significa que el usuario le dio a "Restaurar"
+            if (!isNowMaximized) {
+                // Usamos runLater para esperar a que la ventana termine de cambiar de tamaño
+                javafx.application.Platform.runLater(() -> {
+                    this.centerOnScreen();
+                });
+            }
+        });
     }
 
     public WelcomeController getWelcomeController() {

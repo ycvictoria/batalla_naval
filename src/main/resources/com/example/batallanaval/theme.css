@@ -35,6 +35,7 @@
 
 /* BUTTON HOVER */
 .button:hover {
+    -fx-cursor: hand;
     -fx-background-color: #EAC46F;
 }
 
@@ -61,3 +62,95 @@
     -fx-text-fill: #EAC46F;
 }
 
+
+/* ESTILO PARA EL CAMPO DE TEXTO EN EL MENÚ */
+.input-field {
+    -fx-background-color: #082536; /* Un poco más oscuro que el fondo */
+    -fx-text-fill: #EAC46F;        /* Texto dorado */
+    -fx-prompt-text-fill: derive(#EAC46F, -50%); /* Dorado oscuro para el placeholder */
+    -fx-border-color: #C9A227;     /* Borde dorado */
+    -fx-border-radius: 5;
+    -fx-background-radius: 5;
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+}
+
+.input-field:focused {
+    -fx-border-color: #EAC46F;     /* Borde más brillante al escribir */
+    -fx-effect: dropshadow(gaussian, rgba(201, 162, 39, 0.4), 10, 0, 0, 0);
+}
+
+/* ESTADO DE ERROR (Borde Rojo) */
+/* Usamos .input-field.error para que tenga más peso que el normal */
+.input-field.error {
+    -fx-border-color: #FF4444;
+    -fx-border-width: 2px;
+    -fx-effect: dropshadow(gaussian, rgba(255, 0, 0, 0.5), 10, 0, 0, 0);
+}
+
+/* Asegurar que se vea rojo AUNQUE tenga el foco */
+.input-field.error:focused {
+    -fx-border-color: #FF4444;
+}
+
+/* ESTILO BOTÓN SALIR (ROJO) */
+.exit-button {
+    -fx-background-color: #A63A3A; /* Rojo oscuro base */
+    -fx-text-fill: white;
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-background-radius: 8;
+    -fx-padding: 10 20;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.2), 10, 0, 2, 2);
+}
+
+/* EFECTO HOVER PARA SALIR */
+.exit-button:hover {
+    -fx-background-color: #ff5252; /* Rojo brillante al pasar el mouse */
+    -fx-cursor: hand;              /* Manito del cursor */
+    -fx-effect: dropshadow(gaussian, rgba(255, 82, 82, 0.4), 15, 0.5, 0, 0); /* Resplandor rojo */
+}
+
+
+/* === BOTONES INFERIORES DEL JUEGO === */
+
+/* 1. BOTÓN REGRESAR (Rojo) */
+.back-button {
+    -fx-background-color: #A63A3A; /* Rojo oscuro base */
+    -fx-text-fill: white;
+    -fx-font-size: 18px;       /* TAMAÑO FIJO */
+    -fx-font-weight: bold;     /* NEGRITA */
+    -fx-background-radius: 8;
+    -fx-padding: 10 20;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.2), 10, 0, 2, 2);
+}
+
+/* Efecto Hover para Regresar */
+.back-button:hover {
+    -fx-background-color: #ff5252; /* Rojo brillante */
+    -fx-cursor: hand;
+    -fx-effect: dropshadow(gaussian, rgba(255, 82, 82, 0.4), 15, 0.5, 0, 0);
+}
+
+/* 2. BOTÓN INICIAR BATALLA (Dorado/Verde) */
+.start-button {
+    -fx-background-color: #C9A227; /* Dorado base */
+    -fx-text-fill: #0B1D2A;        /* Texto oscuro */
+    -fx-font-size: 18px;       /* TAMAÑO FIJO IDÉNTICO */
+    -fx-font-weight: bold;     /* NEGRITA IDÉNTICA */
+    -fx-background-radius: 8;
+    -fx-padding: 10 20;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.2), 10, 0, 2, 2);
+}
+
+.start-button:hover {
+    -fx-background-color: #EAC46F; /* Dorado brillante */
+    -fx-cursor: hand;
+}
+
+/* Estado Deshabilitado (Gris) */
+.start-button:disabled {
+    -fx-opacity: 0.7;
+    -fx-background-color: #555555;
+    -fx-text-fill: #aaaaaa;
+}

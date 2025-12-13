@@ -19,52 +19,56 @@
         <Label styleClass="title-label" text="🌊 Batalla Naval" BorderPane.alignment="CENTER" />
     </top>
 
+    <left>
+        <VBox fx:id="fleetPanel" alignment="CENTER"
+              minWidth="280" prefWidth="280" maxWidth="280"
+              spacing="5" style="-fx-padding: 0 0 0 20;"> <Label fx:id="lblPlayerName"
+                                                                 text="Jugador: Desconocido"
+                                                                 style="-fx-font-size: 18px; -fx-text-fill: #EAC46F; -fx-font-weight: bold;"/>
+
+            <Region prefHeight="5" />
+
+            <Label styleClass="section-label" text="Tu Flota" style="-fx-padding: 0 0 5 0;"/>
+
+            <VBox alignment="CENTER" spacing="0">
+                <Label styleClass="ship-label" text="🛳 Portaaviones (1)" />
+                <VBox fx:id="carrierContainer" alignment="CENTER" minHeight="45" prefHeight="45" />
+            </VBox>
+
+            <VBox alignment="CENTER" spacing="0">
+                <Label styleClass="ship-label" text="🚤 Submarinos (2)" />
+                <VBox fx:id="submarineContainer" alignment="CENTER" spacing="2" minHeight="85" prefHeight="85"/>
+            </VBox>
+
+            <VBox alignment="CENTER" spacing="0">
+                <Label styleClass="ship-label" text="🛥 Destructores (3)" />
+                <VBox fx:id="destroyerContainer" alignment="CENTER" spacing="2" minHeight="125" prefHeight="125"/>
+            </VBox>
+
+            <VBox alignment="CENTER" spacing="0">
+                <Label styleClass="ship-label" text="⛵ Fragatas (4)" />
+                <VBox fx:id="frigateContainer" alignment="CENTER" spacing="2" minHeight="165" prefHeight="165"/>
+            </VBox>
+
+            <Region prefHeight="15" />
+
+            <VBox alignment="CENTER" spacing="8">
+                <Button fx:id="btnRotate" onAction="#onRotateClick" prefWidth="220" styleClass="button" text="🔄 Rotar Barco" />
+                <Button fx:id="btnRandom" onAction="#onRandomBoard" prefWidth="220" styleClass="button" text="🎲 Organizar" />
+                <Button fx:id="btnReveal" prefWidth="220" styleClass="reveal-button" text="👁 Revelar Máquina" />
+            </VBox>
+        </VBox>
+    </left>
+
     <center>
-        <VBox alignment="TOP_CENTER" spacing="30">
+        <VBox alignment="TOP_CENTER" spacing="50">
             <padding>
-                <Insets top="80" bottom="20" />
+                <Insets top="30" bottom="10" />
             </padding>
 
-            <HBox alignment="CENTER" spacing="60">
+            <HBox alignment="CENTER" spacing="50">
 
-                <VBox fx:id="fleetPanel" alignment="CENTER"
-                      minWidth="250" prefWidth="250" maxWidth="250"
-                      minHeight="502" prefHeight="502" maxHeight="502"
-                      spacing="10" style="-fx-padding: 0 0 0 0;">
-
-                    <Label styleClass="section-label" text="Tu Flota" style="-fx-padding: 0 0 10 0;"/>
-
-                    <VBox alignment="CENTER" spacing="2">
-                        <Label styleClass="ship-label" text="🛳 Portaaviones (1)" />
-                        <VBox fx:id="carrierContainer" alignment="CENTER" minHeight="45" prefHeight="45" />
-                    </VBox>
-
-                    <VBox alignment="CENTER" spacing="2">
-                        <Label styleClass="ship-label" text="🚤 Submarinos (2)" />
-                        <VBox fx:id="submarineContainer" alignment="CENTER" spacing="5" minHeight="85" prefHeight="85"/>
-                    </VBox>
-
-                    <VBox alignment="CENTER" spacing="2">
-                        <Label styleClass="ship-label" text="🛥 Destructores (3)" />
-                        <VBox fx:id="destroyerContainer" alignment="CENTER" spacing="5" minHeight="125" prefHeight="125"/>
-                    </VBox>
-
-                    <VBox alignment="CENTER" spacing="2">
-                        <Label styleClass="ship-label" text="⛵ Fragatas (4)" />
-                        <VBox fx:id="frigateContainer" alignment="CENTER" spacing="5" minHeight="165" prefHeight="165"/>
-                    </VBox>
-
-                    <Region prefHeight="20" />
-
-                    <VBox alignment="CENTER" spacing="10">
-                        <Button fx:id="btnRotate" onAction="#onRotateClick" prefWidth="220" styleClass="button" text="🔄 Rotar Barco" />
-                        <Button onAction="#onRandomBoard" prefWidth="220" styleClass="button" text="🎲 Organizar" />
-                        <Button fx:id="btnReveal" prefWidth="220" styleClass="reveal-button" text="👁 Revelar Máquina" />
-                    </VBox>
-
-                </VBox>
-
-                <VBox alignment="TOP_CENTER" spacing="15">
+                <VBox alignment="TOP_CENTER" spacing="10">
                     <Label styleClass="section-label" text="Tablero del Jugador" />
                     <StackPane fx:id="playerArea" minWidth="502" prefWidth="502" maxWidth="502" minHeight="502" prefHeight="502" maxHeight="502">
                         <GridPane fx:id="playerBoard" gridLinesVisible="false" minWidth="500" prefWidth="500" maxWidth="500" minHeight="500" prefHeight="500" maxHeight="500" styleClass="board">
@@ -81,10 +85,9 @@
                     </StackPane>
                 </VBox>
 
-                <VBox alignment="TOP_CENTER" spacing="20">
+                <VBox alignment="TOP_CENTER" spacing="10">
                     <Label styleClass="section-label" text="Tablero de la Máquina" />
                     <StackPane fx:id="machineArea" minWidth="502" prefWidth="502" maxWidth="502" minHeight="502" prefHeight="502" maxHeight="502">
-
                         <GridPane fx:id="machineBoard" gridLinesVisible="false"
                                   minWidth="500" prefWidth="500" maxWidth="500"
                                   minHeight="500" prefHeight="500" maxHeight="500"
@@ -104,19 +107,30 @@
                                 <RowConstraints percentHeight="10" /><RowConstraints percentHeight="10" />
                             </rowConstraints>
                         </GridPane>
-
                         <Pane fx:id="revealLayer" pickOnBounds="false" mouseTransparent="true" />
-
                         <Pane fx:id="enemyLayer" pickOnBounds="false" mouseTransparent="true" />
-
                     </StackPane>
                 </VBox>
 
             </HBox>
 
-            <Button fx:id="btnStart" disable="true" prefWidth="250" style="-fx-font-size: 18px;" styleClass="start-button" text="🚀 Iniciar Batalla" />
+            <HBox alignment="CENTER" spacing="40">
+
+                <Button onAction="#onBackToMenu"
+                        prefWidth="220"
+                        prefHeight="50"
+                        styleClass="back-button"
+                        text="🏠 Regresar" />
+
+                <Button fx:id="btnStart"
+                        disable="true"
+                        prefWidth="250"
+                        prefHeight="50"
+                        styleClass="start-button"
+                        text="🚀 Iniciar Batalla" />
+
+            </HBox>
 
         </VBox>
     </center>
-
 </BorderPane>
