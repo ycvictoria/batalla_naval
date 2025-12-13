@@ -528,6 +528,7 @@ public class GameController {
             Ship sunkShip = playerLogical.peek(r, c).getShip();
             markPlayerShipAsSunk(sunkShip);
             numSunkShips++;
+            updateStatsLabels();
         } else {
             paintOnPane(shipLayer, r, c, machineResult);
         }
@@ -892,7 +893,7 @@ public class GameController {
             for (int c = 0; c < 10; c++) {
                 Cell cell = logicalBoard.peek(r, c);
 
-                if (cell.isWasShot()) {
+                if (cell.isShot()) {
                     ShotResult result;
                     if (cell.isEmpty()) result = ShotResult.MISS;
                     else if (cell.getShip().isSunk()) result = ShotResult.SUNK;
