@@ -9,6 +9,7 @@ import javafx.fxml.FXML;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.input.KeyCode;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.StackPane;
@@ -109,6 +110,8 @@ public class GameController {
         // CONFIGURACIÓN INICIAL DEL BOTÓN ROTAR
         updateRotateButtonText(); // Pone el texto correcto al iniciar
         btnRotate.setOnAction(e -> onRotateClick()); // Vincula la acción (o hazlo en el FXML)
+        //add listener of key [space] to toggle orientation
+        registerKeyboardShortcuts();
     }
 
     public void addTargetHighlight() {
@@ -143,7 +146,21 @@ public class GameController {
             btnRotate.setText("Rotación: Vertical ⬇");
         }
     }
+    private void registerKeyboardShortcuts() {
 
+        playerArea.sceneProperty().addListener((obs, oldScene, newScene) -> {
+            if (newScene != null) {
+
+                newScene.setOnKeyPressed(event -> {
+                    if (event.getCode() == KeyCode.SPACE && placementPhase) {
+                        onRotateClick();
+                        event.consume();
+                    }
+                });
+
+            }
+        });
+    }
     // Método público para devolver un barco al menú si se cancela el movimiento
     public void returnShipToPanel(int size) {
         Pane targetContainer = switch (size) {
@@ -539,6 +556,7 @@ public class GameController {
             Ship sunkShip = playerLogical.peek(r, c).getShip();
             markPlayerShipAsSunk(sunkShip);
             numSunkShips++;
+            updateStatsLabels();
         } else {
             paintOnPane(shipLayer, r, c, machineResult);
         }

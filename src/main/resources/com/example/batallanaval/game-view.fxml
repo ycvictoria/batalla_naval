@@ -38,23 +38,24 @@
                 <Region prefHeight="5" />
                 <Label style="-fx-padding: 0 0 5 0;" styleClass="section-label" text="Tu Flota" />
                 <VBox alignment="CENTER" spacing="0">
-                    <Label styleClass="ship-label" text="🛳 Portaaviones (1)" />
+                    <Label styleClass="ship-label" text="🛳 Portaaviones (1) x 1" />
                     <VBox fx:id="carrierContainer" alignment="CENTER" minHeight="45" prefHeight="45" />
                 </VBox>
                 <VBox alignment="CENTER" spacing="0">
-                    <Label styleClass="ship-label" text="🚤 Submarinos (2)" />
+                    <Label styleClass="ship-label" text="🚤 Submarinos (2) x 2" />
                     <VBox fx:id="submarineContainer" alignment="CENTER" minHeight="85" prefHeight="85" spacing="2" />
                 </VBox>
                 <VBox alignment="CENTER" spacing="0">
-                    <Label styleClass="ship-label" text="🛥 Destructores (3)" />
+                    <Label styleClass="ship-label" text="🛥 Destructores (3) x 3" />
                     <VBox fx:id="destroyerContainer" alignment="CENTER" minHeight="125" prefHeight="125" spacing="2" />
                 </VBox>
                 <VBox alignment="CENTER" spacing="0">
-                    <Label styleClass="ship-label" text="⛵ Fragatas (4)" />
+                    <Label styleClass="ship-label" text="⛵ Fragatas (4) x 4" />
                     <VBox fx:id="frigateContainer" alignment="CENTER" minHeight="165" prefHeight="165" spacing="2" />
                 </VBox>
                 <Region prefHeight="15" />
                 <VBox alignment="CENTER" spacing="8">
+                    <Label styleClass="ship-label" text="tecla [space] para rotar o" prefHeight="165"/>
                     <Button fx:id="btnRotate" onAction="#onRotateClick" prefWidth="220" styleClass="button" text="🔄 Rotar Barco" />
                     <Button fx:id="btnRandom" onAction="#onRandomBoard" prefWidth="220" styleClass="button" text="🎲 Organizar" />
                     <Button fx:id="btnReveal" prefWidth="220" styleClass="reveal-button" text="👁 Revelar Máquina" />
