@@ -1,14 +1,30 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import javafx.scene.control.*?>
-<?import javafx.scene.layout.*?>
 <?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
 
-<StackPane xmlns="http://javafx.com/javafx/17.0.14"
+<StackPane fx:id="rootStack" xmlns="http://javafx.com/javafx/17.0.14"
            xmlns:fx="http://javafx.com/fxml"
            fx:controller="com.example.batallanaval.controllers.WelcomeController"
            stylesheets="@theme.css"
-           styleClass="root">
+           styleClass="root"
+           style="-fx-padding: 0;">
+
+    <ImageView fx:id="backgroundView" focusTraversable="false" pickOnBounds="true" preserveRatio="false">
+        <image>
+            <Image url="@batalla_naval_img.jpg" />
+        </image>
+    </ImageView>
+
+    <Region style="-fx-background-color: rgba(0, 0, 0, 0.5);" />
 
     <VBox alignment="CENTER" spacing="25">
         <padding>
@@ -61,4 +77,5 @@
                 prefHeight="45"
                 styleClass="exit-button"/>
     </VBox>
+
 </StackPane>

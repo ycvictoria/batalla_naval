@@ -9,12 +9,18 @@ import javafx.scene.control.Button;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.HBox;
 import javafx.stage.Stage;
+import javafx.scene.layout.StackPane;
+import javafx.scene.image.ImageView;
 
 public class WelcomeController {
 
     // ======================
     // FXML
     // ======================
+
+    @FXML private StackPane rootStack;
+    @FXML private ImageView backgroundView;
+
     @FXML private Button btnContinue;
     @FXML private Button btnNew;
     @FXML private Button btnExit;
@@ -28,6 +34,14 @@ public class WelcomeController {
     // ======================
     @FXML
     public void initialize() {
+
+        // --- 1. LÓGICA DE FONDO RESPONSIVE (EL ARREGLO MÁGICO) ---
+        if (rootStack != null && backgroundView != null) {
+            // Esto "ata" el ancho/alto de la imagen al de la ventana
+            backgroundView.fitWidthProperty().bind(rootStack.widthProperty());
+            backgroundView.fitHeightProperty().bind(rootStack.heightProperty());
+        }
+
         // VERIFICAR SI HAY PARTIDA GUARDADA
         // Si no existe el archivo, deshabilitamos el botón de Continuar
         if (SaveManager.loadPlayerInfo() == null) {
