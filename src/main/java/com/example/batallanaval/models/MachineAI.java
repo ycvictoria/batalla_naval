@@ -5,10 +5,13 @@ import com.example.batallanaval.models.Board;
 import java.util.*;
 
 /**
- * IA estilo "Hunt & Target".
- * - Dispara aleatoriamente hasta encontrar un barco.
- * - Cuando acierta, agrega los vecinos como objetivos prioritarios.
- * - Nunca dispara dos veces a la misma casilla.
+ * Implementa una Inteligencia Artificial con estrategia "Hunt & Target".
+ * La IA opera en dos modos:
+ * 1. Hunt Mode (Caza):Dispara aleatoriamente a casillas no utilizadas.
+ * 2. Target Mode (Objetivo):Una vez que se logra un acierto (HIT),
+ * la IA entra en modo objetivo, disparando a las casillas adyacentes
+ * al acierto para hundir el barco rápidamente.
+ * La IA garantiza que nunca dispara dos veces a la misma casilla.
  */
 public class MachineAI {
 
@@ -21,28 +24,24 @@ public class MachineAI {
     private final Set<String> usedShots = new HashSet<>();
 
     /**
-     * Devuelve el disparo de la IA como {row, col}.
+     * Devuelve el disparo de la IA como un array de coordenadas {fila, columna}.
+     * @param playerBoard El tablero del oponente (jugador humano) sobre el que se va a disparar.
+     * @return Array de dos enteros: {fila, columna} del disparo elegido.
      */
     public int[] shoot(Board playerBoard) {
 
         int size = playerBoard.getSize();
 
-        // =============================
-        // 1. PRIORIDAD: tiros inteligentes (Target Mode)
-        // =============================
         if (!targets.isEmpty()) {
             int[] shot = targets.poll();
-
             String key = shot[0] + "," + shot[1];
+            // Solo dispara si la casilla no ha sido utilizada antes.
             if (!usedShots.contains(key)) {
                 usedShots.add(key);
                 return shot;
             }
         }
 
-        // =============================
-        // 2. RANDOM HUNT MODE
-        // =============================
         int row, col;
         String key;
 
@@ -54,9 +53,6 @@ public class MachineAI {
 
         usedShots.add(key);
 
-        // =============================
-        // 3. Si es HIT → generar adyacentes
-        // =============================
         if (playerBoard.peek(row, col).hasShip()) {
             addAdjacentTargets(row, col, size);
         }
@@ -65,8 +61,12 @@ public class MachineAI {
     }
 
     /**
-     * Añade los vecinos (arriba, abajo, izquierda, derecha) a la lista
-     * para disparos inteligentes.
+     * Añade las coordenadas de los vecinos (Norte, Sur, Este, Oeste) de la casilla
+     * impactada a la cola de objetivos prioritarios ({@code targets}).
+     * Las coordenadas añadidas están dentro de los límites del tablero.
+     * @param r    Fila del acierto.
+     * @param c    Columna del acierto.
+     * @param size Tamaño del tablero (para comprobación de límites).
      */
     private void addAdjacentTargets(int r, int c, int size) {
 

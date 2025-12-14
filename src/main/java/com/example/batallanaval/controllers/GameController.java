@@ -16,7 +16,14 @@ import javafx.scene.shape.Rectangle;
 import javafx.stage.Stage;
 
 import java.io.IOException;
+import java.util.HashSet;
+import java.util.Set;
 
+/**
+ * Controlador principal del juego Batalla Naval.
+ * Gestiona la lógica de la interfaz de usuario, la fase de colocación de barcos,
+ * la fase de batalla contra la IA y la persistencia del estado del juego.
+ */
 public class GameController {
 
     // ========= FXML ELEMENTS =========
@@ -55,33 +62,25 @@ public class GameController {
     private String playerNickname;
     private Board playerLogical = new Board();
     private Board machineLogical = new Board();
-
     private MachineAI ai = new MachineAI();
-    private int numSunkShips ;
-
-    // ========= NUEVOS GESTORES VISUALES =========
+    private int numSunkShips;
     private ShipPlacementManager placementManager;
     private BoardVisualizer boardVisualizer;
-
     // Renderer para pintar los barcos en el menú lateral antes de arrastrarlos
     private final CanvasShipRenderer renderer = new CanvasShipRenderer();
-
     private CanvasMarkerRenderer markerRenderer;
     private Rectangle targetHighlight;
 
-    // =====================================================================
-    // INITIALIZATION
-    // =====================================================================
+    /**
+     * Método de inicialización
+     * Configura el tablero, la flota arrastable y los manejadores de eventos.
+     */
     @FXML
     public void initialize() {
-
         // Inicializar el Visualizador (Dibuja la grilla y el cuadrado de selección)
         // Le pasamos el 'shipLayer' que es el Pane transparente encima del Grid
         boardVisualizer = new BoardVisualizer(shipLayer, CELL);
-        //Para que no aparezca el panel del status barco machina.
-        machineVBoxStats.setVisible(false);
-        machineVBoxStats.setManaged(false);
-
+        // Configuración visual del tablero enemigo
         if (enemyLayer != null) {
             boardVisualizer.drawGrid(enemyLayer); // Dibuja líneas en el enemigo
             boardVisualizer.prepareEnemyBoard(enemyLayer); // Prepara la mira naranja
@@ -90,21 +89,17 @@ public class GameController {
 
         markerRenderer = new CanvasMarkerRenderer(CELL);
 
-        // 3. Inicializar el Gestor de Arrastre
-        // Este se encargará de toda la magia de Drag & Drop
         placementManager = new ShipPlacementManager(this, boardVisualizer, shipLayer, CELL);
 
-        // 4. Crear la flota en el panel lateral (Canvas bonitos)
+        // Crear la flota en el panel lateral
         initDraggableFleet();
 
-        // --- AGREGA ESTO PARA LA MIRA ---
         addTargetHighlight();
-        // para guardar num sunk ships.
-        numSunkShips= 0;
+        numSunkShips = 0;
 
         updateStatsLabels();
 
-        // 5. Configurar botones
+        //Configurar botones
         btnStart.setDisable(true);
         btnStart.setOnAction(e -> startBattlePhase());
         btnReveal.setOnAction(e -> revealEnemyFleet());
@@ -112,13 +107,16 @@ public class GameController {
         // Deshabilitar disparos hasta que empiece el juego
         enableMachineShotEvents(false);
 
-        // CONFIGURACIÓN INICIAL DEL BOTÓN ROTAR
-        updateRotateButtonText(); // Pone el texto correcto al iniciar
-        btnRotate.setOnAction(e -> onRotateClick()); // Vincula la acción (o hazlo en el FXML)
+        updateRotateButtonText();
+        btnRotate.setOnAction(e -> onRotateClick());
     }
 
+    /**
+     * Crea y añade el rectángulo de resaltado que sigue el cursor del jugador
+     * sobre el tablero de la máquina.
+     */
     public void addTargetHighlight() {
-        // 1. Crear el cuadrado
+        //Crear el cuadrado
         targetHighlight = new Rectangle(CELL, CELL); // Tamaño 50x50
         targetHighlight.setFill(Color.rgb(255, 165, 0, 0.3)); // Naranja transparente
         targetHighlight.setStroke(Color.ORANGE);
@@ -126,13 +124,15 @@ public class GameController {
         targetHighlight.setVisible(false); // Oculto al principio
         targetHighlight.setMouseTransparent(true); // ¡Vital! Para que no bloquee tus clics
 
-        // 2. Agregarlo al tablero de la máquina
+        //Agregarlo al tablero de la máquina
         machineBoard.getChildren().add(targetHighlight);
 
     }
-    // =====================================================================
-    // LÓGICA DE ROTACIÓN
-    // =====================================================================
+
+    /**
+     * Maneja el evento del botón de rotación.
+     * Cambia la orientación del barco selecciónado o la orientación predeterminada
+     */
     @FXML
     private void onRotateClick() {
         // Le pedimos al manager que cambie la orientación
@@ -142,6 +142,9 @@ public class GameController {
         updateRotateButtonText();
     }
 
+    /**
+     * Actualiza el texto del botón de rotación, para retroalimentar al jugador.
+     */
     private void updateRotateButtonText() {
         if (placementManager.isHorizontal()) {
             btnRotate.setText("Rotación: Horizontal ➡");
@@ -150,7 +153,10 @@ public class GameController {
         }
     }
 
-    // Método público para devolver un barco al menú si se cancela el movimiento
+    /**
+     * Devuelve un barco visualmente al panel de flota después de ser arrastrado fuera del tablero.
+     * @param size El tamaño del barco a devolver (ej; 4, 3, 2, 1).
+     */
     public void returnShipToPanel(int size) {
         Pane targetContainer = switch (size) {
             case 4 -> carrierContainer;
@@ -163,36 +169,32 @@ public class GameController {
         if (targetContainer != null) {
             createShipInPanel(size, targetContainer);
 
-            // Si habíamos completado la flota, desactivamos el botón de inicio
-            // porque acabamos de sacar un barco del tablero.
+            // Si completamos la flota, desactivamos el botón de inicio.
             btnStart.setDisable(true);
             btnStart.setText("🚀 Iniciar Batalla");
-            btnStart.setStyle(""); // Reset estilo
+            btnStart.setStyle("");
         }
     }
 
-    // =====================================================================
-    // CREACIÓN DE FLOTA ARRASTRABLE (NUEVO MÉTODO)
-    // =====================================================================
+    /**
+     * Inicializa visualmente la flota de barcos arrastrables en el panel lateral.
+     */
     private void initDraggableFleet() {
-        //fleetPanel.getChildren().clear(); // Limpiar por si acaso
+        //Limpiar contenedores antes de inicializar
         if (carrierContainer != null) carrierContainer.getChildren().clear();
         if (submarineContainer != null) submarineContainer.getChildren().clear();
         if (destroyerContainer != null) destroyerContainer.getChildren().clear();
         if (frigateContainer != null) frigateContainer.getChildren().clear();
-
+        //Crea y añade los barcos según su tamaño
         // 1 Portaaviones -> al carrierContainer
         createShipInPanel(4, carrierContainer);
-
         // 2 Submarinos -> al submarineContainer
         createShipInPanel(3, submarineContainer);
         createShipInPanel(3, submarineContainer);
-
         // 3 Destructores -> al destroyerContainer
         createShipInPanel(2, destroyerContainer);
         createShipInPanel(2, destroyerContainer);
         createShipInPanel(2, destroyerContainer);
-
         // 4 Fragatas -> al frigateContainer
         createShipInPanel(1, frigateContainer);
         createShipInPanel(1, frigateContainer);
@@ -200,60 +202,52 @@ public class GameController {
         createShipInPanel(1, frigateContainer);
     }
 
+    /**
+     * Crea el Canvas visual de un barco y lo hace arrastrable, luego lo añade al panel.
+     * @param size Tamaño del barco.
+     * @param targetPane El contenedor donde se añadirá el Canvas.
+     */
     private void createShipInPanel(int size, Pane targetPane) {
         if (targetPane == null) return;
-
         // 1. Definimos un tamaño de celda
         int MENU_CELL = 35;
-
         // 2. Creamos el Canvas con el tamaño real final (Sin setScale)
         Canvas canvas = new Canvas(size * MENU_CELL, MENU_CELL);
-
         // 3. El Renderer es inteligente y se adapta al tamaño del Canvas automáticamente
-        // (Tu CanvasShipRenderer usa canvas.getWidth() así que dibujará bien)
         renderer.render(canvas, size);
-
         // 4. Configurar el arrastre
-        // NOTA: Al arrastrar, el manager usará el tamaño lógico (size),
-        // así que al soltarlo en el tablero se verá grande (50px) otra vez.
         placementManager.createDraggableShip(canvas, size);
-
         // 5. Agregar al panel
         targetPane.getChildren().add(canvas);
     }
 
-    // =====================================================================
-    // ALEATORIZAR TABLERO JUGADOR
-    // =====================================================================
+    /**
+     * Coloca aleatoriamente los barcos del jugador en el tablero.
+     * Limpia los barcos existentes y vuelve a dibujar el tablero.
+     */
     @FXML
     private void onRandomBoard() {
-        // 1. Limpiar Lógica
         playerLogical.clear();
-        playerLogical.randomizeShips(); // Usamos la misma lógica que la IA
-
-        // 2. Limpiar Visuales del Tablero
+        playerLogical.randomizeShips();
         shipLayer.getChildren().clear();
+        boardVisualizer.drawGrid();
+        boardVisualizer.recreateHighlight();
 
-        // RESTAURAR ELEMENTOS VISUALES
-        boardVisualizer.drawGrid();        // Restauramos la cuadrícula
-        boardVisualizer.recreateHighlight(); // ¡RESTAURAMOS EL CUADRO VERDE!
-
-        // 3. Limpiar el Panel de la Izquierda (Ya no hay barcos para arrastrar)
+        // Limpiar el Panel de la Izquierda (Ya no hay barcos para arrastrar)
         if (carrierContainer != null) carrierContainer.getChildren().clear();
         if (submarineContainer != null) submarineContainer.getChildren().clear();
         if (destroyerContainer != null) destroyerContainer.getChildren().clear();
         if (frigateContainer != null) frigateContainer.getChildren().clear();
-
-        // 4. Dibujar los barcos en el tablero basándonos en la nueva lógica
+        // Dibujar los barcos en el tablero.
         drawPlayerBoardFromModel();
-
-        // 5. Activar botón de inicio (porque la flota ya está completa)
+        // Activar botón de inicio (porque la flota ya está completa)
         checkFleetComplete();
     }
 
-    // =====================================================================
-    // MÉTODO CORREGIDO: DIBUJAR BARCOS CON PODER DE ARRASTRE
-    // =====================================================================
+    /**
+     * Dibuja los barcos del modelo lógico del jugador.
+     * Configura las propiedades de arrastre y rotación.
+     */
     private void drawPlayerBoardFromModel() {
         java.util.Set<Ship> drawnShips = new java.util.HashSet<>();
 
@@ -261,20 +255,18 @@ public class GameController {
             for (int c = 0; c < 10; c++) {
                 Ship ship = playerLogical.peek(r, c).getShip();
 
-                // Si encontramos un barco y no lo hemos dibujado aún...
+                // Si encontramos un barco y no lo hemos dibujado aún.
                 if (ship != null && !drawnShips.contains(ship)) {
                     boolean isHorizontal = false;
 
-                    // Detectar orientación
+                    // Determinar orientación.
                     if (c + 1 < 10 && playerLogical.peek(r, c + 1).getShip() == ship) {
                         isHorizontal = true;
                     }
                     if (ship.getSize() == 1) isHorizontal = true;
-
-                    // --- DIBUJAR ---
                     Canvas canvas = new Canvas(ship.getSize() * CELL, CELL);
                     renderer.render(canvas, ship.getSize());
-
+                    // Aplicar rotación y ajustes de posición para barcos verticales.
                     if (!isHorizontal) {
                         canvas.setRotate(90);
                         double offset = CELL * (1 - ship.getSize()) / 2.0;
@@ -284,10 +276,7 @@ public class GameController {
                         canvas.setLayoutX(c * CELL);
                         canvas.setLayoutY(r * CELL);
                     }
-
-                    // AHORA: Les damos vida para que puedas moverlos
                     placementManager.setupDragForPlacedShip(canvas, ship, ship.getSize());
-
                     shipLayer.getChildren().add(canvas);
                     drawnShips.add(ship);
                 }
@@ -295,57 +284,41 @@ public class GameController {
         }
     }
 
-    // =====================================================================
-    // 1. EL INTERRUPTOR: REVELAR / OCULTAR MÁQUINA
-    // =====================================================================
+    /**
+     * Muestra u oculta visualmente la flota enemiga en el tablero de la máquina.
+     */
     private void revealEnemyFleet() {
-        // SI YA ESTÁN VISIBLES -> LOS OCULTAMOS
         if (isEnemyFleetRevealed) {
             revealLayer.getChildren().clear(); // Borra los dibujos
             isEnemyFleetRevealed = false;
             btnReveal.setText("👁 Revelar Máquina");
             return;
         }
-
-        // SI ESTÁN OCULTOS -> LOS DIBUJAMOS (¡CON IMÁGENES, NO CUADROS!)
         drawMachineBoardRealShips();
-
         isEnemyFleetRevealed = true;
         btnReveal.setText("🚫 Ocultar Máquina");
     }
 
-    // =====================================================================
-    // 2. MÉTODO AUXILIAR: DIBUJAR BARCOS REALES (IGUAL QUE EL JUGADOR)
-    // =====================================================================
+    /**
+     * Dibuja los barcos de la máquina en la capa de revelado.
+     */
     private void drawMachineBoardRealShips() {
-        // Usamos un Set para no dibujar el mismo barco 2 veces
         java.util.Set<Ship> drawnShips = new java.util.HashSet<>();
         int size = machineLogical.getSize();
-
         for (int r = 0; r < size; r++) {
             for (int c = 0; c < size; c++) {
                 Ship ship = machineLogical.peek(r, c).getShip();
-
-                // Si encontramos un barco y no lo hemos dibujado aún...
                 if (ship != null && !drawnShips.contains(ship)) {
                     boolean isHorizontal = false;
-
-                    // Detectar orientación mirando a la derecha
+                    // Determinar orientación
                     if (c + 1 < size && machineLogical.peek(r, c + 1).getShip() == ship) {
                         isHorizontal = true;
                     }
-                    if (ship.getSize() == 1) isHorizontal = true; // Fragata siempre igual
-
-                    // --- DIBUJAR ---
+                    if (ship.getSize() == 1) isHorizontal = true;
                     Canvas canvas = new Canvas(ship.getSize() * CELL, CELL);
-
-                    // ¡USAMOS EL MISMO RENDERER QUE TUS BARCOS!
-                    // (Aparecerán grises, igual que los tuyos)
                     renderer.render(canvas, ship.getSize());
-
-                    // Efecto visual: Los hacemos un poco transparentes para indicar que son "espía"
-                    canvas.setOpacity(0.5);
-
+                    canvas.setOpacity(0.5); // Efecto "fantasma"
+                    // Aplicar rotación y ajustes de posición.
                     if (!isHorizontal) {
                         canvas.setRotate(90);
                         double offset = CELL * (1 - ship.getSize()) / 2.0;
@@ -355,10 +328,8 @@ public class GameController {
                         canvas.setLayoutX(c * CELL);
                         canvas.setLayoutY(r * CELL);
                     }
-
                     canvas.setMouseTransparent(true);
                     revealLayer.getChildren().add(canvas); // Añadir a la capa de revelación
-
                     drawnShips.add(ship);
                     autoSave();
                 }
@@ -366,39 +337,45 @@ public class GameController {
         }
     }
 
-    // =====================================================================
-    // GETTER PARA EL MANAGER (IMPORTANTE)
-    // =====================================================================
+    /**
+     * Obtiene el modelo lógico del tablero del jugador.
+     * @return El objeto Board del jugador.
+     */
     public Board getPlayerLogical() {
         return playerLogical;
     }
 
-    // Método llamado por el Manager para saber si ya están todos los barcos
+    /**
+     * Verifica si la flota del jugador está completa y habilita el botón de inicio de la batalla.
+     */
     public void checkFleetComplete() {
         if (playerLogical.isFleetComplete()) {
             btnStart.setDisable(false);
+            updateStatsLabels();
         }
     }
 
+    /**
+     * Cuenta el número de barcos que aún no están hundidos.
+     * @param board El tablero lógico a inspeccionar.
+     * @return El número de barcos restantes.
+     */
     private int countRemainingShips(Board board) {
-        java.util.Set<Ship> uniqueShips = new java.util.HashSet<>();
+        Set<Ship> uniqueShips = new HashSet<>();
         int unsunkCount = 0;
         int size = board.getSize();
 
-        // 1. Recoger todos los objetos Ship únicos en el tablero
+        // 1. Recopila todos los barcos únicos
         for (int r = 0; r < size; r++) {
             for (int c = 0; c < size; c++) {
                 Cell cell = board.peek(r, c);
-                // Asumiendo que Cell tiene un método hasShip()
                 if (cell != null && cell.hasShip()) {
                     uniqueShips.add(cell.getShip());
                 }
             }
         }
-
-        // 2. Contar cuántos de esos barcos NO están hundidos
+        // 2. Contar los barcos que no están hundidos.
         for (Ship ship : uniqueShips) {
-            // Asumiendo que Ship tiene un método isSunk()
             if (!ship.isSunk()) {
                 unsunkCount++;
             }
@@ -407,7 +384,7 @@ public class GameController {
     }
 
     /**
-     * Actualiza los Labels de estadísticas con el conteo actual.
+     * Actualiza las etiquetas de estadísticas con el conteo actual.
      */
     private void updateStatsLabels() {
         int playerRemaining = countRemainingShips(playerLogical);
@@ -421,15 +398,16 @@ public class GameController {
         }
     }
 
-    // =====================================================================
-    // FASE DE BATALLA (DISPAROS)
-    // =====================================================================
+    /**
+     * Transiciona el juego de la fase de colocación a la fase de batalla.
+     * Deshabilita los controles de colocación y habilita los eventos de disparo.
+     */
     private void startBattlePhase() {
+        // Ocultar flota enemiga si estaba visible.
         if (isEnemyFleetRevealed) {
             revealEnemyFleet();
             System.out.println("⚠️ La flota enemiga se ocultó automáticamente para iniciar el juego.");
         }
-
         placementPhase = false;
         shipLayer.setMouseTransparent(true);
         //oculta el panel de placement con nombres barco, muestra el panel coon las estadisticas de la vida de los  barcos
@@ -441,7 +419,7 @@ public class GameController {
         // 1. Deshabilitar botones de edición
         btnRotate.setDisable(true);
         btnRandom.setDisable(true);
-        btnReveal.setDisable(true); // <--- AGREGAR ESTA LÍNEA (Bloquea el botón de espiar)
+        btnReveal.setDisable(true);
 
         // 2. Deshabilitar los contenedores de barcos
         carrierContainer.setDisable(true);
@@ -452,11 +430,19 @@ public class GameController {
         btnStart.setText("¡EN COMBATE!");
         btnStart.setStyle("-fx-background-color: #FF4444; -fx-text-fill: white;");
         autoSave();
+
+        // Habilitar disparos del jugador.
         enableMachineShotEvents(true);
+
         updateStatsLabels();
         System.out.println("⚔ ¡Comienza la batalla!");
     }
 
+    /**
+     * Habílita o deshabilita los manejadores de eventos.
+     * Controla el turno del jugador.
+     * @param enable True para habilitar el disparo del jugador.
+     */
     private void enableMachineShotEvents(boolean enable) {
         if (!enable) {
             machineBoard.setOnMouseClicked(null);
@@ -464,30 +450,25 @@ public class GameController {
             machineBoard.setOnMouseExited(null);
             return;
         }
-
-        // 1. EVENTO DE MOVIMIENTO (El efecto que quieres)
+        // 1. EVENTO DE MOVIMIENTO
         machineBoard.setOnMouseMoved(e -> {
             int col = (int)(e.getX() / CELL);
             int row = (int)(e.getY() / CELL);
             boardVisualizer.updateTargetHighlight(col,row);
-
             // Validar que esté dentro del tablero (0-9)
             if (col >= 0 && col < 10 && row >= 0 && row < 10) {
                 targetHighlight.setVisible(true);
-
-                // Mover el rectángulo a la columna y fila correcta del GridPane
                 GridPane.setColumnIndex(targetHighlight, col);
                 GridPane.setRowIndex(targetHighlight, row);
             } else {
                 targetHighlight.setVisible(false);
             }
         });
-
         // 2. EVENTO DE SALIDA (Ocultar si sacas el mouse)
         machineBoard.setOnMouseExited(e -> {
             targetHighlight.setVisible(false);
         });
-
+        // 3. EVENTO DE CLIC (Disparo del jugador)
         machineBoard.setOnMouseClicked(e -> {
             int col = (int)(e.getX() / CELL);
             int row = (int)(e.getY() / CELL);
@@ -499,20 +480,11 @@ public class GameController {
             autoSave();
             if (result == ShotResult.SUNK) {
                 Ship sunkShip = machineLogical.peek(row, col).getShip();
-
-                // 1. DIBUJAR EL BARCO CADÁVER (En la capa media 'revealLayer')
                 drawSunkShipGhost(sunkShip, row, col);
-
-                // 2. DIBUJAR EL FUEGO (En la capa superior 'enemyLayer')
-                // Cambiamos 'machineBoard' por 'enemyLayer'
                 markShipAsSunk(enemyLayer, machineLogical, sunkShip);
-
                 updateStatsLabels();
-
                 System.out.println("¡HUNDIDO! Barco destruido.");
             } else {
-                // 3. DIBUJAR HIT O MISS (En la capa superior 'enemyLayer')
-                // Usamos paintOnPane en lugar de paint
                 paintOnPane(enemyLayer, row, col, result);
             }
             //actualizar estado  barcos
@@ -533,6 +505,9 @@ public class GameController {
         });   autoSave();
     }
 
+    /**
+     * Ejecuta el turno de la máquina.
+     */
     private void playMachineTurn() {
 
         int[] aiShot = ai.shoot(playerLogical);
@@ -540,8 +515,6 @@ public class GameController {
         int c = aiShot[1];
 
         ShotResult machineResult = playerLogical.shoot(r, c);
-
-        // 🔴 PROTECCIÓN CONTRA NULL
         if (machineResult == null) {
             playMachineTurn();
             return;
@@ -551,6 +524,7 @@ public class GameController {
             Ship sunkShip = playerLogical.peek(r, c).getShip();
             markPlayerShipAsSunk(sunkShip);
             numSunkShips++;
+            updateStatsLabels();
         } else {
             paintOnPane(shipLayer, r, c, machineResult);
         }
@@ -564,14 +538,13 @@ public class GameController {
         updateHealthSquares();
     }
 
-
-    // =====================================================================
-    // HUNDIR BARCO DEL JUGADOR (FANTASMA + FUEGO)
-    // =====================================================================
+    /**
+     * Marca visualemnte un barco de jugador como hundido.
+     * @param sunkShip El objeto Ship que acaba de ser hundido.
+     */
     private void markPlayerShipAsSunk(Ship sunkShip) {
         // 1. Aplicar efecto visual (Transparencia)
         applyGhostEffectToPlayerShip(sunkShip);
-
         // 2. Pintar el fuego encima
         for (int r = 0; r < 10; r++) {
             for (int c = 0; c < 10; c++) {
@@ -582,9 +555,13 @@ public class GameController {
         }
     }
 
-    // =====================================================================
-// NUEVO: PINTAR SOBRE CAPA VISUAL (Para el Tablero del Jugador)
-// =====================================================================
+    /**
+     * Dibuja un marcador visual, en una celda específica.
+     * @param layer La capa donde se dibujará.
+     * @param row La fila del disparo
+     * @param col La columna del disparo
+     * @param result El resultado del disparo.
+     */
     private void paintOnPane(Pane layer, int row, int col, ShotResult result) {
         Canvas marker = null;
 
@@ -596,56 +573,37 @@ public class GameController {
 
         if (marker != null) {
             marker.setMouseTransparent(true);
-            // En un Pane normal, usamos layout X e Y, no columnas/filas
             marker.setLayoutX(col * CELL);
             marker.setLayoutY(row * CELL);
-
-            // ¡TRUCO! Lo agregamos al final para que se dibuje ENCIMA de los barcos
             layer.getChildren().add(marker);
             marker.toFront();
         }
     }
 
-    // =====================================================================
-    // PINTAR DISPAROS (CON ICONOS)
-    // =====================================================================
-    private void paint(GridPane pane, int row, int col, ShotResult result) {
-
-        // Usamos Canvas en lugar de Rectangle
-        Canvas marker = null;
-
-        switch (result) {
-            case MISS -> marker = markerRenderer.drawMiss(); // Dibuja la X roja
-            case HIT  -> marker = markerRenderer.drawHit();  // Dibuja la Bomba
-            case SUNK -> marker = markerRenderer.drawSunk(); // Dibuja el Fuego
-        }
-
-        if (marker != null) {
-            // Importante: setMouseTransparent(true) para que el icono no bloquee clics futuros
-            marker.setMouseTransparent(true);
-            pane.add(marker, col, row);
-        }
-    }
-
-    // =====================================================================
-    // MÉTODO AUXILIAR: PINTAR TODO EL BARCO DE FUEGO
-    // =====================================================================
+    /**
+     * Marca todas las celdas ocupadas por un barco hundido con el marcador SUNK (fuego).
+     * @param layer La capa visual (Pane) donde pintar.
+     * @param board El tablero lógico donde buscar el barco.
+     * @param sunkShip El barco hundido.
+     */
     private void markShipAsSunk(Pane layer, Board board, Ship sunkShip) {
         for (int r = 0; r < 10; r++) {
             for (int c = 0; c < 10; c++) {
                 if (board.peek(r, c).getShip() == sunkShip) {
-                    // Ahora usamos paintOnPane para dibujar en la capa superior
                     paintOnPane(layer, r, c, ShotResult.SUNK);
                 }
             }
         }
     }
 
-    // =====================================================================
-    // PINTAR UN BARCO HUNDIDO ESPECÍFICO
-    // =====================================================================
+    /**
+     * Dibuja una representación visual de un barco de la máquina que ha sido hundido
+     * en la capa de revelación.
+     * @param ship El barco de la máquina hundido.
+     * @param r Fila de una de las celdas del barco (se usa para encontrar el inicio).
+     * @param c Columna de una de las celdas del barco (se usa para encontrar el inicio).
+     */
     private void drawSunkShipGhost(Ship ship, int r, int c) {
-        // 1. Calcular orientación
         boolean isHorizontal = false;
         if (ship.getSize() == 1) {
             isHorizontal = true;
@@ -656,8 +614,6 @@ public class GameController {
             if (c - 1 >= 0 && machineLogical.peek(r, c - 1).getShip() == ship) isHorizontal = true;
         }
 
-        // A veces la coordenada (r,c) que recibimos es la del último disparo, no la cabeza del barco.
-        // Necesitamos encontrar la esquina superior izquierda del barco para dibujarlo bien.
         int startR = r;
         int startC = c;
 
@@ -690,13 +646,13 @@ public class GameController {
             canvas.setLayoutY(startR * CELL);
         }
 
-        // 4. Agregar a la capa 'revealLayer' (que está DEBAJO del fuego pero ENCIMA del agua)
         revealLayer.getChildren().add(canvas);
     }
 
-    // =====================================================================
-    // MANEJO DE FIN DEL JUEGO (VICTORIA / DERROTA)
-    // =====================================================================
+    /**
+     * Muestra el mensaje de fin de juego y deshabilita la interacción.
+     * @param playerWon true si el jugador ganó, false si perdió.
+     */
     private void handleGameOver(boolean playerWon) {
 
         isGameFinished = true;
@@ -736,10 +692,17 @@ public class GameController {
         updateStatsLabels();
     }
 
+    /**
+     * Establece el apodo del jugador.
+     * @param playerNickname El apodo a establecer.
+     */
     public void setPlayerNickname(String playerNickname) {
         this.playerNickname = playerNickname;
     }
 
+    /**
+     * Guarda automáticamente el estado actual de ambos tableros.
+     */
     private void autoSave() {
         // Si el juego terminó, no guardes nada.
         if (isGameFinished) return;
@@ -748,10 +711,21 @@ public class GameController {
         SaveManager.saveBoard(machineLogical, "machine_board.ser");
         SaveManager.savePlayerInfo(playerNickname, numSunkShips,placementPhase);
     }
+
+    /**
+     * Establece el estado de la fase actual del juego.
+     * @param placementPhase true si es la fase de colocación, false si es la fase de batalla.
+     */
     public void setPlacementPhase(boolean placementPhase){
         this.placementPhase= placementPhase;
     }
 
+    /**
+     * Carga un estado de juego guardado y configura la interfaz de usuario en consecuencia.
+     * @param player El modelo lógico del tablero del jugador cargado.
+     * @param machine El modelo lógico del tablero de la máquina cargado.
+     * @param data Los datos del jugador cargados (nickname, barcos hundidos, fase).
+     */
     public void loadGame(Board player, Board machine, PlayerData data) {
         this.playerLogical = player;
         this.machineLogical = machine;
@@ -759,13 +733,10 @@ public class GameController {
         this.numSunkShips = data.getSunkShips();
         this.placementPhase = data.isPlacementPhase();
 
-        // 1. Actualizar nombre
         lblPlayerName.setText("Almirante " + playerNickname);
-
-        // 2. DIBUJAR TODO PRIMERO (Importante para que existan los objetos gráficos)
         redrawBoards();
 
-        // 3. CONFIGURAR ESTADO DEL JUEGO
+        // CONFIGURAR ESTADO DEL JUEGO
         if (placementPhase) {
             initDraggableFleet();
             shipLayer.setMouseTransparent(false);
@@ -822,31 +793,29 @@ public class GameController {
         updateStatsLabels();
     }
 
-
-    // =====================================================================
-    // RESTAURA TODO
-    // =====================================================================
+    /**
+     * Redibuja completamente ambos tableros, incluyendo barcos y marcadores de disparo,
+     * basado en el estado lógico cargado.
+     */
     private void redrawBoards() {
-        // 1. LIMPIEZA PROFUNDA
         playerBoard.getChildren().clear();
         machineBoard.getChildren().clear();
         shipLayer.getChildren().clear();
         enemyLayer.getChildren().clear();
         revealLayer.getChildren().clear();
 
-        // 2. RESTAURAR TABLERO JUGADOR
+        // RESTAURAR TABLERO JUGADOR
         drawPlayerBoardFromModel();
         boardVisualizer.drawGrid();
         boardVisualizer.recreateHighlight();
 
-        // 3. RESTAURAR TABLERO ENEMIGO (¡ESTO FALTABA!)
-        // A) Volver a pintar las líneas en el lado derecho
-        boardVisualizer.drawGrid(enemyLayer); // <--- ESTA LÍNEA ARREGLA LA GRILLA
+        // RESTAURAR TABLERO ENEMIGO
+        boardVisualizer.drawGrid(enemyLayer);
 
-        // B) Volver a crear y agregar la mira naranja
-        addTargetHighlight(); // <--- ESTA LÍNEA ARREGLA EL CUADRO NARANJA
+        // Volver a crear y agregar la mira naranja
+        addTargetHighlight();
 
-        // 4. RESTAURAR DISPAROS (X, Bombas, Fuego)
+        // RESTAURAR DISPAROS (X, Bombas, Fuego)
         restoreShotsVisuals(playerLogical, shipLayer);
         restoreShotsVisuals(machineLogical, enemyLayer);
 
@@ -859,9 +828,11 @@ public class GameController {
         }
     }
 
-    // =====================================================================
-    // MÉTODO AUXILIAR: BUSCAR BARCO DEL JUGADOR Y HACERLO FANTASMA
-    // =====================================================================
+    /**
+     * Aplica un efecto visual de semitransparencia (fantasma) al Canvas
+     * que representa al barco del jugador hundido.
+     * @param ship El barco del jugador hundido.
+     */
     private void applyGhostEffectToPlayerShip(Ship ship) {
         int startR = -1, startC = -1;
         boolean found = false;
@@ -907,18 +878,19 @@ public class GameController {
         }
     }
 
-    // =====================================================================
-    // MÉTODO AUX PARA PERSISTENCIA
-    // Recorre un tablero lógico cargado y vuelve a pintar los disparos visualmente.
-    // =====================================================================
+    /**
+     * Restaura los marcadores de disparo.
+     * @param logicalBoard El tablero lógico
+     * @param targetLayer La capa visual
+     */
     private void restoreShotsVisuals(Board logicalBoard, Pane targetLayer) {
-        java.util.Set<Ship> restoredShips = new java.util.HashSet<>();
+        Set<Ship> restoredShips = new HashSet<>();
 
         for (int r = 0; r < 10; r++) {
             for (int c = 0; c < 10; c++) {
                 Cell cell = logicalBoard.peek(r, c);
 
-                if (cell.isWasShot()) {
+                if (cell.isShot()) {
                     ShotResult result;
                     if (cell.isEmpty()) result = ShotResult.MISS;
                     else if (cell.getShip().isSunk()) result = ShotResult.SUNK;
@@ -949,25 +921,12 @@ public class GameController {
         }
     }
 
-    public void startNewGame(Board player,
-                             Board machine,
-                             String nickname,
-                             int sunkShips) {
-
-        this.playerLogical = player;
-        this.machineLogical = machine;
-        this.playerNickname = nickname;
-        this.numSunkShips = sunkShips;
-
-        // Actualizar el label
-        lblPlayerName.setText("Almirante " + nickname);
-
-        placementPhase = true; // importante
-        initDraggableFleet();  // mostrar barcos
-        redrawBoards();
-
-    }
-    //por si se cierra la ventana por si acaso
+    /**
+     * Adjunta un manejador al evento de cierre de la ventana (Stage).
+     * Garantiza que el estado actual del juego se guarde automáticamente
+     * antes de que la ventana principal sea cerrada por el usuario (ej. clic en 'X').
+     * @param stage El objeto Stage principal de la aplicación.
+     */
     public void attachCloseHandler(Stage stage) {
         stage.setOnCloseRequest(e -> {
             autoSave();
@@ -975,29 +934,27 @@ public class GameController {
         });
     }
 
+    /**
+     * Maneja la acción de volver al menú principal.
+     * Muestra una alerta de confirmación, guarda automáticamente la partida si no ha terminado,
+     * cierra la ventana actual del juego y abre la vista del menú principal.
+     * @throws IOException Si ocurre un error al cargar la vista del menú principal.
+     */
     @FXML
     private void onBackToMenu() throws IOException {
-        // 1. Crear la alerta de confirmación
         javafx.scene.control.Alert alert = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.CONFIRMATION);
         alert.setTitle("Volver al Menú");
         alert.setHeaderText("¿Estás seguro de que deseas salir?");
         alert.setContentText("No te preocupes, los datos de la partida se guardarán automáticamente.");
-
-        // 2. Mostrar la alerta y esperar a que el usuario decida
         java.util.Optional<javafx.scene.control.ButtonType> result = alert.showAndWait();
-
-        // 3. Solo si presiona "Aceptar" (OK), ejecutamos la salida
         if (result.isPresent() && result.get() == javafx.scene.control.ButtonType.OK) {
-
             // Guardamos antes de salir (si el juego no ha terminado)
             if (!isGameFinished) {
                 autoSave();
             }
-
             // Cerramos la ventana actual
             Stage stage = (Stage) btnStart.getScene().getWindow();
             stage.close();
-
             // Abrimos el menú principal
             new com.example.batallanaval.views.WelcomeView().show();
         }
