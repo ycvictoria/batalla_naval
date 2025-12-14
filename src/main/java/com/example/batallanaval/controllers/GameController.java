@@ -6,14 +6,15 @@ import com.example.batallanaval.views.BoardVisualizer;
 import com.example.batallanaval.views.CanvasMarkerRenderer;
 import com.example.batallanaval.views.CanvasShipRenderer;
 import javafx.fxml.FXML;
-import javafx.geometry.Pos;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
+import javafx.scene.image.ImageView;
 import javafx.stage.Stage;
+import javafx.scene.layout.TilePane;
 
 import java.io.IOException;
 import java.util.HashSet;
@@ -28,26 +29,33 @@ public class GameController {
 
     // ========= FXML ELEMENTS =========
     @FXML private VBox fleetPanel;
-    @FXML private Label lblPlayerName;
     @FXML private VBox carrierContainer;
     @FXML private VBox submarineContainer;
     @FXML private VBox destroyerContainer;
-    @FXML private VBox frigateContainer;
+
+    @FXML private TilePane frigateContainer;
+
+    @FXML private Label lblPlayerName;
+    @FXML private Label lblCarrierCount;
+    @FXML private Label lblSubmarineCount;
+    @FXML private Label lblDestroyerCount;
+    @FXML private Label lblFrigateCount;
+
+    // Etiquetas para los contadores numéricos
     @FXML private Label lblPlayerShips;
     @FXML private Label lblMachineShips;
-    @FXML private VBox placementBox;
-    @FXML private VBox playerHealthBox;
-    @FXML private VBox machineHealthBox;
-    @FXML private VBox machineVBoxStats;
+
+    @FXML private Pane enemyLayer;
+    @FXML private Pane shipLayer;
+    @FXML private Pane revealLayer;
 
     @FXML private StackPane playerArea;
-    @FXML private Pane shipLayer;
+    @FXML private StackPane rootStack;
+
     @FXML private GridPane playerBoard;
     @FXML private GridPane machineBoard;
 
-    @FXML private Pane enemyLayer;
-    @FXML private Pane revealLayer;
-    private boolean isEnemyFleetRevealed = false;
+    @FXML private ImageView backgroundView;
 
     @FXML private Button btnRotate;
     @FXML private Button btnReveal;
@@ -56,6 +64,7 @@ public class GameController {
 
 
     // ========= GAME LOGIC =========
+    private boolean isEnemyFleetRevealed = false;
     private final int CELL = 50;
     private boolean placementPhase = true;
     private boolean isGameFinished = false;
@@ -77,6 +86,11 @@ public class GameController {
      */
     @FXML
     public void initialize() {
+        if (rootStack != null && backgroundView != null) {
+            backgroundView.fitWidthProperty().bind(rootStack.widthProperty());
+            backgroundView.fitHeightProperty().bind(rootStack.heightProperty());
+        }
+
         // Inicializar el Visualizador (Dibuja la grilla y el cuadrado de selección)
         // Le pasamos el 'shipLayer' que es el Pane transparente encima del Grid
         boardVisualizer = new BoardVisualizer(shipLayer, CELL);
@@ -93,10 +107,12 @@ public class GameController {
 
         // Crear la flota en el panel lateral
         initDraggableFleet();
+        updateFleetCounts();
 
         addTargetHighlight();
         numSunkShips = 0;
 
+        // Actualiza los contadores al iniciar
         updateStatsLabels();
 
         //Configurar botones
@@ -127,6 +143,24 @@ public class GameController {
         //Agregarlo al tablero de la máquina
         machineBoard.getChildren().add(targetHighlight);
 
+    }
+
+    /**
+     * Actualiza los contadores visuales en el panel de la flota (ej: "Fragatas (4)").
+     * Se llama cada vez que un barco sale o entra del panel.
+     */
+    public void updateFleetCounts() {
+        // Contamos cuántos elementos visuales (Canvas) hay en cada VBox
+        int carrierCount = carrierContainer.getChildren().size();
+        int submarineCount = submarineContainer.getChildren().size();
+        int destroyerCount = destroyerContainer.getChildren().size();
+        int frigateCount = frigateContainer.getChildren().size();
+
+        // Actualizamos los textos
+        if (lblCarrierCount != null) lblCarrierCount.setText("🛳 Portaaviones (" + carrierCount + ")");
+        if (lblSubmarineCount != null) lblSubmarineCount.setText("🚤 Submarinos (" + submarineCount + ")");
+        if (lblDestroyerCount != null) lblDestroyerCount.setText("🛥 Destructores (" + destroyerCount + ")");
+        if (lblFrigateCount != null) lblFrigateCount.setText("⛵ Fragatas (" + frigateCount + ")");
     }
 
     /**
@@ -173,33 +207,56 @@ public class GameController {
             btnStart.setDisable(true);
             btnStart.setText("🚀 Iniciar Batalla");
             btnStart.setStyle("");
+
+            // Actualizar controlador al quitar barco
+            updateStatsLabels();
+            updateFleetCounts();
+
+            // GUARDADO AUTOMÁTICO AL QUITAR BARCO
+            autoSave();
         }
     }
 
     /**
-     * Inicializa visualmente la flota de barcos arrastrables en el panel lateral.
+     * Inicializa visualmente la flota en el panel lateral.
+     * Solo crea los barcos que NO están en el tablero lógico.
      */
     private void initDraggableFleet() {
-        //Limpiar contenedores antes de inicializar
+        // 1. Limpiar contenedores
         if (carrierContainer != null) carrierContainer.getChildren().clear();
         if (submarineContainer != null) submarineContainer.getChildren().clear();
         if (destroyerContainer != null) destroyerContainer.getChildren().clear();
         if (frigateContainer != null) frigateContainer.getChildren().clear();
-        //Crea y añade los barcos según su tamaño
-        // 1 Portaaviones -> al carrierContainer
-        createShipInPanel(4, carrierContainer);
-        // 2 Submarinos -> al submarineContainer
-        createShipInPanel(3, submarineContainer);
-        createShipInPanel(3, submarineContainer);
-        // 3 Destructores -> al destroyerContainer
-        createShipInPanel(2, destroyerContainer);
-        createShipInPanel(2, destroyerContainer);
-        createShipInPanel(2, destroyerContainer);
-        // 4 Fragatas -> al frigateContainer
-        createShipInPanel(1, frigateContainer);
-        createShipInPanel(1, frigateContainer);
-        createShipInPanel(1, frigateContainer);
-        createShipInPanel(1, frigateContainer);
+
+        // 2. Contar cuántos barcos de cada tipo YA están puestos en el tablero
+        int placedCarriers = 0;
+        int placedSubmarines = 0;
+        int placedDestroyers = 0;
+        int placedFrigates = 0;
+
+        for (Ship ship : playerLogical.getFleet()) {
+            switch (ship.getSize()) {
+                case 4 -> placedCarriers++;
+                case 3 -> placedSubmarines++;
+                case 2 -> placedDestroyers++;
+                case 1 -> placedFrigates++;
+            }
+        }
+
+        // 3. Calcular cuántos faltan por poner (Total - Puestos)
+        int remainingCarriers = 1 - placedCarriers;
+        int remainingSubmarines = 2 - placedSubmarines;
+        int remainingDestroyers = 3 - placedDestroyers;
+        int remainingFrigates = 4 - placedFrigates;
+
+        // 4. Crear solo los que faltan
+        for (int i = 0; i < remainingCarriers; i++) createShipInPanel(4, carrierContainer);
+        for (int i = 0; i < remainingSubmarines; i++) createShipInPanel(3, submarineContainer);
+        for (int i = 0; i < remainingDestroyers; i++) createShipInPanel(2, destroyerContainer);
+        for (int i = 0; i < remainingFrigates; i++) createShipInPanel(1, frigateContainer);
+
+        // 5. Actualizar los textos de los contadores visuales (Labels del panel)
+        updateFleetCounts();
     }
 
     /**
@@ -349,9 +406,15 @@ public class GameController {
      * Verifica si la flota del jugador está completa y habilita el botón de inicio de la batalla.
      */
     public void checkFleetComplete() {
+        // Actualizar etiqueta SIEMPRE que se verifique la flota
+        updateStatsLabels();
+        updateFleetCounts();
+
+        // GUARDADO AUTOMÁTICO AL COLOCAR BARCO
+        autoSave();
+
         if (playerLogical.isFleetComplete()) {
             btnStart.setDisable(false);
-            updateStatsLabels();
         }
     }
 
@@ -387,14 +450,26 @@ public class GameController {
      * Actualiza las etiquetas de estadísticas con el conteo actual.
      */
     private void updateStatsLabels() {
-        int playerRemaining = countRemainingShips(playerLogical);
-        int machineRemaining = countRemainingShips(machineLogical);
+        if (placementPhase) {
+            // FASE 1: Contar cuántos barcos has puesto en el tablero
+            int placedShips = playerLogical.getFleetSize();
+            if (lblPlayerShips != null) {
+                lblPlayerShips.setText("Barcos colocados: " + placedShips + "/10");
+            }
+            if (lblMachineShips != null) {
+                lblMachineShips.setText("Flota enemiga: Oculta");
+            }
+        } else {
+            // FASE 2: Contar barcos vivos (Tu lógica original)
+            int playerRemaining = countRemainingShips(playerLogical);
+            int machineRemaining = countRemainingShips(machineLogical);
 
-        if (lblPlayerShips != null) {
-            lblPlayerShips.setText("Barcos restantes (Tú): " + playerRemaining);
-        }
-        if (lblMachineShips != null) {
-            lblMachineShips.setText("Barcos restantes (IA): " + machineRemaining);
+            if (lblPlayerShips != null) {
+                lblPlayerShips.setText("Barcos restantes (Tú): " + playerRemaining + "/10");
+            }
+            if (lblMachineShips != null) {
+                lblMachineShips.setText("Barcos restantes (IA): " + machineRemaining + "/10");
+            }
         }
     }
 
@@ -410,12 +485,7 @@ public class GameController {
         }
         placementPhase = false;
         shipLayer.setMouseTransparent(true);
-        //oculta el panel de placement con nombres barco, muestra el panel coon las estadisticas de la vida de los  barcos
-        placementBox.setVisible(false);
-        placementBox.setManaged(false); // 🔑 CLAVE
-        machineVBoxStats.setVisible(true);
-        machineVBoxStats.setManaged(true);
-        updateHealthSquares();
+
         // 1. Deshabilitar botones de edición
         btnRotate.setDisable(true);
         btnRandom.setDisable(true);
@@ -487,8 +557,7 @@ public class GameController {
             } else {
                 paintOnPane(enemyLayer, row, col, result);
             }
-            //actualizar estado  barcos
-            updateHealthSquares();
+
             if (machineLogical.isGameOver()) {
                 System.out.println("¡VICTORIA! Has ganado.");
                 handleGameOver(true);
@@ -496,7 +565,7 @@ public class GameController {
                 return;
             }
 
-                // Si fallas, turno de la Máquina
+            // Si fallas, turno de la Máquina
             if (result == ShotResult.MISS) {
                 playMachineTurn();
             } else {
@@ -535,7 +604,6 @@ public class GameController {
             // La IA vuelve a disparar si acierta
             playMachineTurn();
         }
-        updateHealthSquares();
     }
 
     /**
@@ -654,13 +722,10 @@ public class GameController {
      * @param playerWon true si el jugador ganó, false si perdió.
      */
     private void handleGameOver(boolean playerWon) {
-
         isGameFinished = true;
-        // 1. Desactivar interacciones
         machineBoard.setOnMouseClicked(null);
         machineBoard.setOnMouseMoved(null);
 
-        // 2. Cambiar el botón de estado
         if (playerWon) {
             btnStart.setText("🏆 ¡VICTORIA! 🏆");
             btnStart.setStyle("-fx-background-color: #4CAF50; -fx-text-fill: white; -fx-font-weight: bold;");
@@ -669,23 +734,34 @@ public class GameController {
             btnStart.setText("☠ DERROTA ☠");
             btnStart.setStyle("-fx-background-color: #2b2b2b; -fx-text-fill: red; -fx-font-weight: bold;");
             btnStart.setDisable(true);
-
-            // Si pierde, muestra dónde estaban los barcos enemigos que faltaron
             if (!isEnemyFleetRevealed) {
                 revealEnemyFleet();
             }
         }
 
-        // 3. Mostrar Alerta Visual
         javafx.scene.control.Alert alert = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.INFORMATION);
         alert.setTitle("Fin del Juego");
         alert.setHeaderText(null);
 
         if (playerWon) {
-            alert.setContentText("¡FELICIDADES ALMIRANTE!\nHas hundido toda la flota enemiga.");
+            alert.setContentText("¡FELICIDADES ALMIRANTE!\n\nHas hundido toda la flota enemiga y dominado los mares.");
         } else {
-            alert.setContentText("¡HAN HUNDIDO TU FLOTA!\nMás suerte para la próxima, cadete.");
+            alert.setContentText("¡HAN HUNDIDO TU FLOTA!\n\nMás suerte para la próxima, cadete.");
         }
+
+        // APLICAR ESTILO CSS
+        javafx.scene.control.DialogPane dialogPane = alert.getDialogPane();
+        dialogPane.getStylesheets().add(getClass().getResource("/com/example/batallanaval/theme.css").toExternalForm());
+        dialogPane.getStyleClass().add("dialog-pane");
+        // Agregamos icono propio
+        try {
+            ImageView icon = new ImageView(new javafx.scene.image.Image(getClass().getResourceAsStream("/com/example/batallanaval/barco_icon.png")));
+            icon.setFitHeight(48);
+            icon.setFitWidth(48);
+            alert.setGraphic(icon);
+        } catch (Exception ignored) { } // Si no carga, usa el default
+
+        dialogPane.setMinHeight(javafx.scene.layout.Region.USE_PREF_SIZE);
 
         SaveManager.deleteSaves();
         alert.show();
@@ -944,71 +1020,38 @@ public class GameController {
     private void onBackToMenu() throws IOException {
         javafx.scene.control.Alert alert = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.CONFIRMATION);
         alert.setTitle("Volver al Menú");
-        alert.setHeaderText("¿Estás seguro de que deseas salir?");
-        alert.setContentText("No te preocupes, los datos de la partida se guardarán automáticamente.");
+
+        if (isGameFinished) {
+            alert.setHeaderText(null);
+            alert.setContentText("¿Estás seguro de que deseas volver al inicio?");
+        } else {
+            alert.setHeaderText("¿Estás seguro de que deseas salir?");
+            alert.setContentText("No te preocupes, los datos de la partida se guardarán automáticamente.");
+        }
+
+        // APLICAR ESTILO CSS A LA ALERTA
+        javafx.scene.control.DialogPane dialogPane = alert.getDialogPane();
+        dialogPane.getStylesheets().add(getClass().getResource("/com/example/batallanaval/theme.css").toExternalForm());
+        dialogPane.getStyleClass().add("dialog-pane");
+
+        // Agregamos icono propio
+        try {
+            ImageView icon = new ImageView(new javafx.scene.image.Image(getClass().getResourceAsStream("/com/example/batallanaval/barco_icon.png")));
+            icon.setFitHeight(48);
+            icon.setFitWidth(48);
+            alert.setGraphic(icon);
+        } catch (Exception ignored) { } // Si no carga, usa el default
+
+        dialogPane.setMinHeight(javafx.scene.layout.Region.USE_PREF_SIZE);
         java.util.Optional<javafx.scene.control.ButtonType> result = alert.showAndWait();
+
         if (result.isPresent() && result.get() == javafx.scene.control.ButtonType.OK) {
-            // Guardamos antes de salir (si el juego no ha terminado)
             if (!isGameFinished) {
                 autoSave();
             }
-            // Cerramos la ventana actual
             Stage stage = (Stage) btnStart.getScene().getWindow();
             stage.close();
-            // Abrimos el menú principal
             new com.example.batallanaval.views.WelcomeView().show();
         }
-    }
-
-    private void updateHealthSquares() {
-        drawShipSquares(playerLogical, playerHealthBox);
-        drawShipSquares(machineLogical, machineHealthBox);
-    }
-
-    private void drawShipSquares(Board board, VBox container) {
-        container.getChildren().clear();
-        int index = 1;
-
-        for (Ship ship : board.getFleet()) {
-
-            HBox row = new HBox(8);
-            row.setAlignment(Pos.CENTER_LEFT);
-
-            Label name = new Label(getShipName(ship.getSize()) + " " + index);
-            name.setMinWidth(140);
-
-            HBox squares = new HBox(4);
-
-            int alive = ship.getRemainingLife();
-            int total = ship.getSize();
-
-            for (int i = 0; i < total; i++) {
-                Rectangle square = new Rectangle(14, 14);
-
-                if (i < alive) square.setFill(Color.LIMEGREEN);
-                else square.setFill(Color.DARKRED);
-
-                square.setStroke(Color.BLACK);
-                square.setArcWidth(3);
-                square.setArcHeight(3);
-
-                squares.getChildren().add(square);
-            }
-
-            row.getChildren().addAll(name, squares);
-            container.getChildren().add(row);
-
-            index++;
-        }
-    }
-
-    private String getShipName(int size) {
-        return switch (size) {
-            case 4 -> "🛳 Portaaviones";
-            case 3 -> "🚤 Submarino";
-            case 2 -> "🛥 Destructor";
-            case 1 -> "⛵ Fragata";
-            default -> "Barco";
-        };
     }
 }
