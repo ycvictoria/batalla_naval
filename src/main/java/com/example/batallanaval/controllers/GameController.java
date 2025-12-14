@@ -843,6 +843,8 @@ public class GameController {
             submarineContainer.setDisable(true);
             destroyerContainer.setDisable(true);
             frigateContainer.setDisable(true);
+            placementBox.setVisible(false);
+            playerHealthBox.setVisible(true);
 
             // 5. Configurar botón de inicio como "En Combate"
             btnStart.setDisable(true);
@@ -1102,10 +1104,12 @@ public class GameController {
     }
     public void restoreShip(int size) {
         availableShips.put(size, availableShips.get(size) + 1);
+        initDraggableFleet();
         updateFleetLabels();
     }
     public void consumeShip(int size) {
         availableShips.put(size, availableShips.get(size) - 1);
+        initDraggableFleet();
         updateFleetLabels();
     }
 }
