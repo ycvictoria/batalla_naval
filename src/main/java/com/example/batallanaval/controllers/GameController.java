@@ -6,13 +6,11 @@ import com.example.batallanaval.views.BoardVisualizer;
 import com.example.batallanaval.views.CanvasMarkerRenderer;
 import com.example.batallanaval.views.CanvasShipRenderer;
 import javafx.fxml.FXML;
+import javafx.geometry.Pos;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
-import javafx.scene.layout.GridPane;
-import javafx.scene.layout.Pane;
-import javafx.scene.layout.StackPane;
-import javafx.scene.layout.VBox;
+import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 import javafx.stage.Stage;
@@ -28,44 +26,36 @@ import java.util.Set;
  */
 public class GameController {
 
-    @FXML
-    private VBox fleetPanel;
-    @FXML
-    private Label lblPlayerName;
-    @FXML
-    private VBox carrierContainer;
-    @FXML
-    private VBox submarineContainer;
-    @FXML
-    private VBox destroyerContainer;
-    @FXML
-    private VBox frigateContainer;
-    @FXML
-    private Label lblPlayerShips;
-    @FXML
-    private Label lblMachineShips;
-    @FXML
-    private StackPane playerArea;
-    @FXML
-    private Pane shipLayer;
-    @FXML
-    private GridPane playerBoard;
-    @FXML
-    private GridPane machineBoard;
-    @FXML
-    private Pane enemyLayer;
-    @FXML
-    private Pane revealLayer;
-    @FXML
-    private Button btnRotate;
-    @FXML
-    private Button btnReveal;
-    @FXML
-    private Button btnRandom;
-    @FXML
-    private Button btnStart;
+    // ========= FXML ELEMENTS =========
+    @FXML private VBox fleetPanel;
+    @FXML private Label lblPlayerName;
+    @FXML private VBox carrierContainer;
+    @FXML private VBox submarineContainer;
+    @FXML private VBox destroyerContainer;
+    @FXML private VBox frigateContainer;
+    @FXML private Label lblPlayerShips;
+    @FXML private Label lblMachineShips;
+    @FXML private VBox placementBox;
+    @FXML private VBox playerHealthBox;
+    @FXML private VBox machineHealthBox;
+    @FXML private VBox machineVBoxStats;
 
+    @FXML private StackPane playerArea;
+    @FXML private Pane shipLayer;
+    @FXML private GridPane playerBoard;
+    @FXML private GridPane machineBoard;
+
+    @FXML private Pane enemyLayer;
+    @FXML private Pane revealLayer;
     private boolean isEnemyFleetRevealed = false;
+
+    @FXML private Button btnRotate;
+    @FXML private Button btnReveal;
+    @FXML private Button btnRandom;
+    @FXML private Button btnStart;
+
+
+    // ========= GAME LOGIC =========
     private final int CELL = 50;
     private boolean placementPhase = true;
     private boolean isGameFinished = false;
@@ -420,7 +410,12 @@ public class GameController {
         }
         placementPhase = false;
         shipLayer.setMouseTransparent(true);
-
+        //oculta el panel de placement con nombres barco, muestra el panel coon las estadisticas de la vida de los  barcos
+        placementBox.setVisible(false);
+        placementBox.setManaged(false); // 🔑 CLAVE
+        machineVBoxStats.setVisible(true);
+        machineVBoxStats.setManaged(true);
+        updateHealthSquares();
         // 1. Deshabilitar botones de edición
         btnRotate.setDisable(true);
         btnRandom.setDisable(true);
@@ -492,7 +487,8 @@ public class GameController {
             } else {
                 paintOnPane(enemyLayer, row, col, result);
             }
-
+            //actualizar estado  barcos
+            updateHealthSquares();
             if (machineLogical.isGameOver()) {
                 System.out.println("¡VICTORIA! Has ganado.");
                 handleGameOver(true);
@@ -500,7 +496,7 @@ public class GameController {
                 return;
             }
 
-            // Si fallas, turno de la Máquina
+                // Si fallas, turno de la Máquina
             if (result == ShotResult.MISS) {
                 playMachineTurn();
             } else {
@@ -539,6 +535,7 @@ public class GameController {
             // La IA vuelve a disparar si acierta
             playMachineTurn();
         }
+        updateHealthSquares();
     }
 
     /**
@@ -961,5 +958,57 @@ public class GameController {
             // Abrimos el menú principal
             new com.example.batallanaval.views.WelcomeView().show();
         }
+    }
+
+    private void updateHealthSquares() {
+        drawShipSquares(playerLogical, playerHealthBox);
+        drawShipSquares(machineLogical, machineHealthBox);
+    }
+
+    private void drawShipSquares(Board board, VBox container) {
+        container.getChildren().clear();
+        int index = 1;
+
+        for (Ship ship : board.getFleet()) {
+
+            HBox row = new HBox(8);
+            row.setAlignment(Pos.CENTER_LEFT);
+
+            Label name = new Label(getShipName(ship.getSize()) + " " + index);
+            name.setMinWidth(140);
+
+            HBox squares = new HBox(4);
+
+            int alive = ship.getRemainingLife();
+            int total = ship.getSize();
+
+            for (int i = 0; i < total; i++) {
+                Rectangle square = new Rectangle(14, 14);
+
+                if (i < alive) square.setFill(Color.LIMEGREEN);
+                else square.setFill(Color.DARKRED);
+
+                square.setStroke(Color.BLACK);
+                square.setArcWidth(3);
+                square.setArcHeight(3);
+
+                squares.getChildren().add(square);
+            }
+
+            row.getChildren().addAll(name, squares);
+            container.getChildren().add(row);
+
+            index++;
+        }
+    }
+
+    private String getShipName(int size) {
+        return switch (size) {
+            case 4 -> "🛳 Portaaviones";
+            case 3 -> "🚤 Submarino";
+            case 2 -> "🛥 Destructor";
+            case 1 -> "⛵ Fragata";
+            default -> "Barco";
+        };
     }
 }
