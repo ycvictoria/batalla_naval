@@ -811,6 +811,7 @@ public class GameController {
 
         lblPlayerName.setText("Almirante " + playerNickname);
         redrawBoards();
+        updateFleetCounts();
 
         // CONFIGURAR ESTADO DEL JUEGO
         if (placementPhase) {
@@ -845,7 +846,7 @@ public class GameController {
 
             // 2. Bloquear interacciones de colocación
             shipLayer.setMouseTransparent(true);
-
+            updateFleetCounts();
             // 3. BLOQUEAR BOTONES (Incluido el de Revelar)
             btnRotate.setDisable(true);
             btnRandom.setDisable(true);
