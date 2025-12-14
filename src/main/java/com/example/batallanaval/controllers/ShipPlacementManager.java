@@ -13,6 +13,7 @@ import javafx.scene.input.TransferMode;
 import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
+import javafx.scene.Cursor;
 
 /**
  * Clase encargada de gestionar toda la lógica de arrastrar y soltar (Drag-and-Drop)
@@ -128,6 +129,8 @@ public class ShipPlacementManager {
      */
     public void createDraggableShip(Canvas canvas, int size) {
         renderer.render(canvas, size);
+        // Pone una manito al pasar el mouse
+        canvas.setCursor(Cursor.HAND);
 
         canvas.setOnDragDetected(e -> {
             Dragboard db = canvas.startDragAndDrop(TransferMode.MOVE);
@@ -149,8 +152,12 @@ public class ShipPlacementManager {
             visualizer.getSelectionHighlight().setVisible(false);
             if (e.getTransferMode() == TransferMode.MOVE) {
                 // Truco del fantasma en el menú
-                canvas.setOpacity(0);
-                canvas.setMouseTransparent(true);
+                //canvas.setOpacity(0);
+                //canvas.setMouseTransparent(true);
+
+                // Lo eliminamos del panel
+                ((Pane) canvas.getParent()).getChildren().remove(canvas);
+                controller.updateFleetCounts();
             }
         });
     }
@@ -192,6 +199,10 @@ public class ShipPlacementManager {
      * @param size El tamaño del barco.
      */
     public void setupDragForPlacedShip(Canvas canvas, Ship shipRef, int size) {
+
+        // Poner manito en el tablero también
+        canvas.setCursor(Cursor.HAND);
+
         canvas.setOnDragDetected(e -> {
             // 1. Iniciar el arrastre
             Dragboard db = canvas.startDragAndDrop(TransferMode.MOVE);

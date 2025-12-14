@@ -20,14 +20,17 @@ import javafx.scene.image.ImageView;
  */
 public class WelcomeController {
 
+    // FXML
     @FXML private StackPane rootStack;
     @FXML private ImageView backgroundView;
+    @FXML private HBox newGameBox;
+    @FXML private TextField nameField;
+
+    // Botones
     @FXML private Button btnContinue;
     @FXML private Button btnNew;
     @FXML private Button btnExit;
     @FXML private Button buttonHelp;
-    @FXML private HBox newGameBox;
-    @FXML private TextField nameField;
     @FXML private Button btnAccept;
 
     /**
@@ -64,6 +67,7 @@ public class WelcomeController {
         btnAccept.setOnAction(e -> startNewGame());
         nameField.setOnAction(e -> startNewGame());
         btnContinue.setOnAction(e -> continueGame());
+        buttonHelp.setOnAction(e -> showInstructionsDialog());
         btnExit.setOnAction(e -> {
             Stage stage = (Stage) btnExit.getScene().getWindow();
             stage.close();
@@ -83,6 +87,19 @@ public class WelcomeController {
                 nameField.getStyleClass().add("error");
             }
             javafx.scene.control.Alert alert = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.WARNING);
+
+            javafx.scene.control.DialogPane dialogPane = alert.getDialogPane();
+            dialogPane.getStylesheets().add(getClass().getResource("/com/example/batallanaval/theme.css").toExternalForm());
+            dialogPane.getStyleClass().add("dialog-pane");
+            dialogPane.setMinHeight(javafx.scene.layout.Region.USE_PREF_SIZE);
+
+            try {
+                ImageView icon = new ImageView(new javafx.scene.image.Image(getClass().getResourceAsStream("/com/example/batallanaval/barco_icon.png")));
+                icon.setFitHeight(48);
+                icon.setFitWidth(48);
+                alert.setGraphic(icon);
+            } catch (Exception ignored) { }
+
             alert.setTitle("Nombre muy corto");
             alert.setHeaderText(null);
             alert.setContentText("Por favor, ingresa un nombre de al menos 3 caracteres.");
@@ -158,42 +175,65 @@ public class WelcomeController {
      * el diálogo de instrucciones.
      */
     @FXML
-    private void onHelpButtonClick() {
-        showInstructionsDialog();
-    }
-
     /**
      * Muestra una alerta con las instrucciones del juego.
      */
     private void showInstructionsDialog() {
-        Alert alert = new javafx.scene.control.Alert(Alert.AlertType.INFORMATION);
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
         alert.setTitle("Instrucciones de Batalla Naval");
         alert.setHeaderText("¡Bienvenido al campo de batalla, Almirante!");
 
         String content = """
-        🌊 \tFASE 1: COLOCACIÓN DE BARCOS
+        🌊 FASE 1: COLOCACIÓN DE BARCOS
         
-        \t1. Flota: Tienes 10 barcos de diferentes tamaños:
-        \t\t• 1 Acorazado (4 celdas)
-        \t\t• 2 Cruceros (3 celdas)
-        \t\t• 3 Destructores (2 celdas)
-        \t\t• 4 Submarinos (1 celda)
-        \t2. Posicionamiento: Arrastra los barcos desde el panel izquierdo a tu tablero (el de abajo).
-        \t3. Rotación: Usa el botón "Rotación" para cambiar la orientación (Horizontal/Vertical) del barco seleccionado o antes de colocar uno.
-        \t4. Opciones: Usa "Flota Aleatoria" para colocar todos los barcos automáticamente.
-        \t5. Inicio: El botón "Iniciar Batalla" se habilitará cuando todos los 10 barcos estén colocados.
+        • Flota: Tienes 10 barcos de diferentes tamaños:
+            - 1 Portaaviones (4 casillas)
+            - 2 Submarinos (3 casillas)
+            - 3 Destructores (2 casillas)
+            - 4 Fragatas (1 casilla)
+            
+        • Posicionamiento: Arrastra los barcos desde el panel izquierdo a tu tablero.
+        • Rotación: Usa el botón "Rotar" o clic derecho para girar el barco.
+        • Opciones: Usa "Organizar" para colocación automática.
+        • Inicio: El botón "Iniciar Batalla" se habilitará al colocar los 10 barcos.
 
-        💥 \tFASE 2: BATALLA
+        💥 FASE 2: BATALLA
         
-        \t1. Tu Turno: Haz clic en el tablero de la Máquina (el de arriba) para disparar.
-        \t\t• 💧 Agua (Miss): Se marca con una 'X' o círculo azul. Turno de la IA.
-        \t\t• 💣 Impacto (Hit): Se marca con una bomba (que refleja impacto). ¡Obtienes otro turno!
-        \t\t• 🚢 Hundido (Sunk): El barco se marca con fuego. ¡Obtienes otro turno!
-        \t2. Turno de la IA: Si fallas, es el turno de la Máquina. La IA disparará a tu tablero.
-        \t3. Fin del Juego: El juego termina cuando la flota de un jugador ha sido completamente hundida.
+        • Tu Turno: Haz clic en el tablero enemigo (derecha) para disparar.
+            💧 Agua (Miss): Se marca con una 'X'. Turno de la IA.
+            💣 Impacto (Hit): Se marca con una bomba. ¡Repites turno!
+            🚢 Hundido (Sunk): El barco arde en llamas. ¡Repites turno!
+            
+        • Turno de la IA: Si fallas, la máquina dispara a tu tablero.
+        • Fin del Juego: Gana quien hunda toda la flota enemiga primero.
         """;
 
         alert.setContentText(content);
+
+        // 2. Vincular el CSS
+        javafx.scene.control.DialogPane dialogPane = alert.getDialogPane();
+        dialogPane.getStylesheets().add(getClass().getResource("/com/example/batallanaval/theme.css").toExternalForm());
+        dialogPane.getStyleClass().add("dialog-pane");
+
+        // 3. Icono propio
+        try {
+            ImageView icon = new ImageView(new javafx.scene.image.Image(getClass().getResourceAsStream("/com/example/batallanaval/barco_icon.png")));
+            icon.setFitHeight(48);
+            icon.setFitWidth(48);
+            alert.setGraphic(icon);
+        } catch (Exception ignored) { }
+
+        // 4. AJUSTE DE TAMAÑO Y TEXTO
+        dialogPane.setMinWidth(600);
+        dialogPane.setMinHeight(javafx.scene.layout.Region.USE_PREF_SIZE);
+
+        // Ajuste de línea
+        javafx.scene.control.Label contentLabel = (javafx.scene.control.Label) dialogPane.lookup(".content");
+        if (contentLabel != null) {
+            contentLabel.setWrapText(true);
+            contentLabel.setStyle("-fx-font-size: 13px; -fx-text-fill: #DFF3FF;"); // Forzar estilo legible
+        }
+
         alert.setResizable(true);
         alert.showAndWait();
     }

@@ -154,3 +154,44 @@
     -fx-background-color: #555555;
     -fx-text-fill: #aaaaaa;
 }
+
+/* === ESTILOS PARA ALERTAS (DIALOGS) === */
+
+.dialog-pane {
+    -fx-background-color: #0B1D2A; /* Fondo azul oscuro del juego */
+    -fx-border-color: #C9A227;     /* Borde dorado */
+    -fx-border-width: 2px;
+}
+
+/* El encabezado (donde dice "Bienvenido...") */
+.dialog-pane .header-panel {
+    -fx-background-color: #093045; /* Un tono ligeramente diferente */
+    -fx-border-color: #C9A227;
+    -fx-border-width: 0 0 1 0; /* Solo borde inferior */
+}
+
+/* Texto del encabezado */
+.dialog-pane .header-panel .label {
+    -fx-text-fill: #EAC46F; /* Texto dorado */
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+}
+
+/* El cuerpo del texto (Las instrucciones) */
+.dialog-pane .content.label {
+    -fx-text-fill: #DFF3FF; /* Blanco azulado para leer fácil */
+    -fx-font-size: 13px;
+}
+
+/* El botón de Aceptar dentro del Alert */
+.dialog-pane .button-bar .button {
+    -fx-background-color: #C9A227;
+    -fx-text-fill: #0B1D2A;
+    -fx-font-weight: bold;
+    -fx-background-radius: 5;
+    -fx-cursor: hand;
+}
+
+.dialog-pane .button-bar .button:hover {
+    -fx-background-color: #EAC46F;
+}
