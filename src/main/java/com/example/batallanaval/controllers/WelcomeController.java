@@ -87,6 +87,19 @@ public class WelcomeController {
                 nameField.getStyleClass().add("error");
             }
             javafx.scene.control.Alert alert = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.WARNING);
+
+            javafx.scene.control.DialogPane dialogPane = alert.getDialogPane();
+            dialogPane.getStylesheets().add(getClass().getResource("/com/example/batallanaval/theme.css").toExternalForm());
+            dialogPane.getStyleClass().add("dialog-pane");
+            dialogPane.setMinHeight(javafx.scene.layout.Region.USE_PREF_SIZE);
+
+            try {
+                ImageView icon = new ImageView(new javafx.scene.image.Image(getClass().getResourceAsStream("/com/example/batallanaval/barco_icon.png")));
+                icon.setFitHeight(48);
+                icon.setFitWidth(48);
+                alert.setGraphic(icon);
+            } catch (Exception ignored) { }
+
             alert.setTitle("Nombre muy corto");
             alert.setHeaderText(null);
             alert.setContentText("Por favor, ingresa un nombre de al menos 3 caracteres.");
