@@ -68,4 +68,8 @@ public class  Ship implements Serializable {
     public void setPlaced(boolean p) {
         placed = p;
     }
+
+    public int getRemainingLife() {
+        return Math.max(0, length - hits);
+    }
 }

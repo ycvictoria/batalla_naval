@@ -206,4 +206,8 @@ public class Board implements Serializable {
         // Limpiar la lista de barcos
         fleet.clear();
     }
+
+    public ArrayList< Ship> getFleet() {
+        return (ArrayList<Ship>) fleet;
+    }
 }
