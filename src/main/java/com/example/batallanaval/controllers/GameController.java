@@ -844,6 +844,8 @@ public class GameController {
             destroyerContainer.getChildren().clear();
             frigateContainer.getChildren().clear();
 
+            updateFleetCounts();
+
             // 2. Bloquear interacciones de colocación
             shipLayer.setMouseTransparent(true);
             updateFleetCounts();
