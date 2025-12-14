@@ -187,10 +187,10 @@ public class WelcomeController {
         🌊 FASE 1: COLOCACIÓN DE BARCOS
         
         • Flota: Tienes 10 barcos de diferentes tamaños:
-            - 1 Acorazado (4 celdas)
-            - 2 Cruceros (3 celdas)
-            - 3 Destructores (2 celdas)
-            - 4 Submarinos (1 celda)
+            - 1 Portaaviones (4 casillas)
+            - 2 Submarinos (3 casillas)
+            - 3 Destructores (2 casillas)
+            - 4 Fragatas (1 casilla)
             
         • Posicionamiento: Arrastra los barcos desde el panel izquierdo a tu tablero.
         • Rotación: Usa el botón "Rotar" o clic derecho para girar el barco.
