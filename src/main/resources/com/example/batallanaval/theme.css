@@ -62,6 +62,10 @@
     -fx-text-fill: #EAC46F;
 }
 
+.tecla-label {
+    -fx-font-size: 12px;
+    -fx-text-fill: #EAC46F;
+}
 
 /* ESTILO PARA EL CAMPO DE TEXTO EN EL MENÚ */
 .input-field {

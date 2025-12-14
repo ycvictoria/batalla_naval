@@ -36,9 +36,6 @@ public class GameController {
     @FXML private Label lblPlayerShips;
     @FXML private Label lblMachineShips;
     @FXML private VBox placementBox;
-    @FXML private VBox playerHealthBox;
-    @FXML private VBox machineHealthBox;
-    @FXML private VBox machineVBoxStats;
 
     @FXML private StackPane playerArea;
     @FXML private Pane shipLayer;
@@ -410,12 +407,7 @@ public class GameController {
         }
         placementPhase = false;
         shipLayer.setMouseTransparent(true);
-        //oculta el panel de placement con nombres barco, muestra el panel coon las estadisticas de la vida de los  barcos
-        placementBox.setVisible(false);
-        placementBox.setManaged(false); // 🔑 CLAVE
-        machineVBoxStats.setVisible(true);
-        machineVBoxStats.setManaged(true);
-        updateHealthSquares();
+
         // 1. Deshabilitar botones de edición
         btnRotate.setDisable(true);
         btnRandom.setDisable(true);
@@ -488,7 +480,7 @@ public class GameController {
                 paintOnPane(enemyLayer, row, col, result);
             }
             //actualizar estado  barcos
-            updateHealthSquares();
+
             if (machineLogical.isGameOver()) {
                 System.out.println("¡VICTORIA! Has ganado.");
                 handleGameOver(true);
@@ -535,7 +527,6 @@ public class GameController {
             // La IA vuelve a disparar si acierta
             playMachineTurn();
         }
-        updateHealthSquares();
     }
 
     /**
@@ -733,7 +724,7 @@ public class GameController {
         this.numSunkShips = data.getSunkShips();
         this.placementPhase = data.isPlacementPhase();
 
-        lblPlayerName.setText("Almirante " + playerNickname);
+        lblPlayerName.setText("ALMIRANTE " + playerNickname.toUpperCase());
         redrawBoards();
 
         // CONFIGURAR ESTADO DEL JUEGO
@@ -960,55 +951,5 @@ public class GameController {
         }
     }
 
-    private void updateHealthSquares() {
-        drawShipSquares(playerLogical, playerHealthBox);
-        drawShipSquares(machineLogical, machineHealthBox);
-    }
 
-    private void drawShipSquares(Board board, VBox container) {
-        container.getChildren().clear();
-        int index = 1;
-
-        for (Ship ship : board.getFleet()) {
-
-            HBox row = new HBox(8);
-            row.setAlignment(Pos.CENTER_LEFT);
-
-            Label name = new Label(getShipName(ship.getSize()) + " " + index);
-            name.setMinWidth(140);
-
-            HBox squares = new HBox(4);
-
-            int alive = ship.getRemainingLife();
-            int total = ship.getSize();
-
-            for (int i = 0; i < total; i++) {
-                Rectangle square = new Rectangle(14, 14);
-
-                if (i < alive) square.setFill(Color.LIMEGREEN);
-                else square.setFill(Color.DARKRED);
-
-                square.setStroke(Color.BLACK);
-                square.setArcWidth(3);
-                square.setArcHeight(3);
-
-                squares.getChildren().add(square);
-            }
-
-            row.getChildren().addAll(name, squares);
-            container.getChildren().add(row);
-
-            index++;
-        }
-    }
-
-    private String getShipName(int size) {
-        return switch (size) {
-            case 4 -> "🛳 Portaaviones";
-            case 3 -> "🚤 Submarino";
-            case 2 -> "🛥 Destructor";
-            case 1 -> "⛵ Fragata";
-            default -> "Barco";
-        };
-    }
 }
